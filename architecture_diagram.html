@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architecture de la Plateforme (Diagramme)</title>
+    <!-- Chargement de la bibliothèque Mermaid JS -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        p {
+            color: #7f8c8d;
+            margin-bottom: 30px;
+        }
+        .mermaid {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            max-width: 100%;
+            overflow-x: auto;
+        }
+        .mindmap-container {
+            margin-top: 50px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🚀 Pipeline d'Exécution MLOps</h1>
+    <p>Ce schéma montre le trajet exact de la donnée, depuis le fichier CSV jusqu'au Notebook généré final.</p>
+    
+    <!-- Le code du diagramme Mermaid -->
+    <div class="mermaid">
+    graph TD
+        %% Couleurs et Styles
+        classDef user fill:#2c3e50,stroke:#34495e,stroke-width:2px,color:#fff;
+        classDef ts fill:#8e44ad,stroke:#9b59b6,stroke-width:2px,color:#fff;
+        classDef py fill:#2980b9,stroke:#3498db,stroke-width:2px,color:#fff;
+        classDef db fill:#27ae60,stroke:#2ecc71,stroke-width:2px,color:#fff;
+        classDef llm fill:#e67e22,stroke:#d35400,stroke-width:2px,color:#fff;
+        classDef hitl fill:#c0392b,stroke:#e74c3c,stroke-width:2px,color:#fff;
+        classDef final fill:#f1c40f,stroke:#f39c12,stroke-width:2px,color:#000;
+
+        %% Entrée
+        A((🧑‍💻 Utilisateur)):::user -->|Upload| B[📄 Fichier CSV]:::user
+
+        %% Orchestrateur TS
+        subgraph "Couche 1 : Le Cerveau (TS-Orchestrator & Genkit)"
+            B --> C[🕵️‍♂️ Profilage des données]:::ts
+            C --> D[🧠 Requête Stratégique]:::ts
+            
+            %% RAG & LLM
+            D -.-> E[(🕸️ Neo4j Knowledge Graph)]:::db
+            E -.->|Decision Rules| D
+            D --> F((🤖 LM Studio / Gemma)):::llm
+            F -->|JSON Stratégie| G[🛡️ Superviseur TS]:::ts
+            
+            %% Human in the Loop
+            G --> H{⚠️ Human In The Loop}:::hitl
+        end
+
+        H -->|Refusé| Z[❌ Fin du pipeline]:::user
+        H -->|Validé OUI| I[🐍 Transmission aux Muscles]:::ts
+
+        %% Muscles Python
+        subgraph "Couche 2 : Les Muscles (Py-Executors & CrewAI)"
+            I --> J[🧹 Data Engineer Agent]:::py
+            J -->|Nettoyage Pandas| K[📊 Model Évaluation]:::py
+            
+            K --> L{Vérification Guardrails}:::ts
+            L -->|Erreur Mathématique| M[⚠️ Rejet Métrique]:::py
+            L -->|Erreur Graphique| N[👁️ Rejet Vision IA]:::ts
+            
+            L -->|Tout est au Vert| O[🚀 Auto-Tuning Optuna]:::py
+            O --> P[👨‍🔬 Data Scientist Agent]:::py
+            P -->|Advanced Training| Q[📦 MLOps & MLFlow]:::py
+        end
+
+        %% Sortie
+        Q --> R[📓 Notebook Factory]:::ts
+        R --> S[✅ CRISP-DM Jupyter Notebook]:::final
+        S --> A
+    </div>
+
+    <div class="mindmap-container">
+        <h2 style="text-align: center; color: #2c3e50;">👥 Organigramme des Agents IA</h2>
+        <div class="mermaid">
+        mindmap
+          root((🏢 Enterprise<br/>Agentic Platform))
+            Le Cerveau TS
+              (Genkit)
+              Stratège Data
+              Superviseur HITL
+              Critique Vision IA
+            La Mémoire
+              (Neo4j Graph RAG)
+              Règles Métiers
+              Expertise MLOps
+            Les Muscles Py
+              (CrewAI)
+              Ingénieur Data
+              Lead Data Scientist
+            La Mécanique
+              (Algorithmes)
+              Optuna Auto-Tune
+              Notebook Factory
+              Pandas & Scikit
+        </div>
+    </div>
+
+    <script>
+        // Initialisation de Mermaid JS
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+</body>
+</html>

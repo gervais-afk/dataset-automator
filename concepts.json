@@ -1,0 +1,396 @@
+{
+  "concepts": [
+    {
+      "name": "Stationnarité",
+      "category": "time_series",
+      "definition": "Propriété d'une série temporelle dont les caractéristiques statistiques, telles que la moyenne et la variance, restent constantes dans le temps. Prérequis pour la modélisation classique.",
+      "related_tools": ["statsmodels", "ADF Test", "KPSS Test"],
+      "source_references": ["7 Steps to Mastering Time Series Analysis with Python - KDnuggets"]
+    },
+    {
+      "name": "Décomposition STL",
+      "category": "time_series",
+      "definition": "Technique de séparation d'une série temporelle en composantes de tendance, saisonnières et résiduelles, robuste face aux valeurs aberrantes.",
+      "related_tools": ["statsmodels.tsa.seasonal", "sktime"],
+      "source_references": ["7 Steps to Mastering Time Series Analysis with Python - KDnuggets"]
+    },
+    {
+      "name": "Caractéristiques Retardées (Lagged Features)",
+      "category": "time_series",
+      "definition": "Variables créées en décalant les valeurs passées d'une série temporelle pour capter l'autocorrélation lors de l'entraînement de modèles d'apprentissage automatique.",
+      "related_tools": ["Polars", "Pandas", "scikit-learn"],
+      "source_references": ["Lagged features for time series forecasting - Scikit-learn"]
+    },
+    {
+      "name": "TimeSeriesSplit",
+      "category": "validation",
+      "definition": "Stratégie de validation croisée par fenêtre glissante (walk-forward validation) respectant la chronologie pour éviter les fuites de données (data leakage).",
+      "related_tools": ["scikit-learn"],
+      "source_references": ["TimeSeriesSplit — scikit-learn 1.9.0 documentation", "The Kaggle Grandmasters Playbook: 7 Battle-Tested Modeling Techniques for Tabular Data"]
+    },
+    {
+      "name": "SplineTransformer",
+      "category": "feature_engineering",
+      "definition": "Outil permettant de créer des caractéristiques temporelles périodiques lissées pour éviter les discontinuités artificielles (ex: passage de l'heure 23 à 0).",
+      "related_tools": ["scikit-learn", "RidgeCV"],
+      "source_references": ["Time-related feature engineering — scikit-learn 1.9.0 documentation"]
+    },
+    {
+      "name": "Concept Drift (Dérive de Concept)",
+      "category": "mlops",
+      "definition": "Changement dans la distribution des données ou dans la relation entre les caractéristiques et la variable cible en production, entraînant une dégradation des performances du modèle.",
+      "related_tools": ["Evidently AI", "Alibi Detect"],
+      "source_references": ["7 Steps to Mastering Time Series Analysis with Python - KDnuggets", "MLOps in Practice — Jupyter to Production ML Pipeline 2026 - EITT", "How to Build an End-to-End ML Platform Locally: From Experiment ..."]
+    },
+    {
+      "name": "MLflow",
+      "category": "mlops",
+      "definition": "Plateforme open-source standardisant la gestion du cycle de vie des modèles, le suivi des expérimentations et l'enregistrement (registry) des modèles.",
+      "related_tools": ["Tracking Server", "Model Registry"],
+      "source_references": ["Build Your First MLOps Pipeline in 90 Minutes - KodeKloud", "How to Build an End-to-End ML Platform Locally: From Experiment ...", "MLOps in Practice — Jupyter to Production ML Pipeline 2026 - EITT"]
+    },
+    {
+      "name": "Model Registry",
+      "category": "mlops",
+      "definition": "Référentiel centralisé pour stocker, versionner et gérer le cycle de vie des modèles ML, utilisant des alias comme '@champion' ou '@challenger'.",
+      "related_tools": ["MLflow", "Azure ML"],
+      "source_references": ["Build Your First MLOps Pipeline in 90 Minutes - KodeKloud", "How to Build an End-to-End ML Platform Locally: From Experiment ..."]
+    },
+    {
+      "name": "DVC (Data Version Control)",
+      "category": "mlops",
+      "definition": "Système de contrôle de version orienté Git, conçu pour gérer de grands ensembles de données et des modèles ML via des pointeurs légers.",
+      "related_tools": ["Git", "S3", "Azure Blob"],
+      "source_references": ["Build Your First MLOps Pipeline in 90 Minutes - KodeKloud", "MLOps in Practice — Jupyter to Production ML Pipeline 2026 - EITT"]
+    },
+    {
+      "name": "Feature Store",
+      "category": "mlops",
+      "definition": "Couche centralisant la définition, le stockage et la distribution (offline/online) des caractéristiques ML pour garantir la cohérence entre l'entraînement et l'inférence.",
+      "related_tools": ["Feast", "Tecton"],
+      "source_references": ["How to Build an End-to-End ML Platform Locally: From Experiment ...", "MLOps in Practice — Jupyter to Production ML Pipeline 2026 - EITT"]
+    },
+    {
+      "name": "Déploiement Canary (Canary Deployment)",
+      "category": "mlops",
+      "definition": "Stratégie de déploiement progressif où une fraction mineure du trafic réel est d'abord routée vers la nouvelle version du modèle pour détecter d'éventuels bugs.",
+      "related_tools": ["Kubernetes", "KServe", "Seldon Core"],
+      "source_references": ["MLOps in Practice — Jupyter to Production ML Pipeline 2026 - EITT", "Build Your First MLOps Pipeline in 90 Minutes - KodeKloud"]
+    },
+    {
+      "name": "Déploiement Blue-Green",
+      "category": "mlops",
+      "definition": "Modèle de mise en production s'appuyant sur deux environnements identiques permettant de basculer instantanément le trafic vers le nouveau modèle.",
+      "related_tools": ["Kubernetes", "Seldon Core"],
+      "source_references": ["MLOps in Practice — Jupyter to Production ML Pipeline 2026 - EITT"]
+    },
+    {
+      "name": "FastAPI",
+      "category": "mlops",
+      "definition": "Framework Python asynchrone hautement performant utilisé fréquemment pour exposer les modèles ML via des API RESTful avec documentation automatique (Swagger).",
+      "related_tools": ["Uvicorn", "Pydantic", "Docker"],
+      "source_references": ["Build Your First MLOps Pipeline in 90 Minutes - KodeKloud", "How to Build an End-to-End ML Platform Locally: From Experiment ..."]
+    },
+    {
+      "name": "Seldon Core",
+      "category": "mlops",
+      "definition": "Plateforme Kubernetes native pour le déploiement de modèles d'apprentissage automatique à grande échelle, supportant de multiples frameworks.",
+      "related_tools": ["Kubernetes", "Alibi Explain"],
+      "source_references": ["MLOps in Practice — Jupyter to Production ML Pipeline 2026 - EITT"]
+    },
+    {
+      "name": "Papermill",
+      "category": "orchestration",
+      "definition": "Outil permettant de paramétrer et d'exécuter des notebooks Jupyter comme des tâches automatisées de pipelines.",
+      "related_tools": ["Jupyter", "Apache Airflow"],
+      "source_references": ["Jupyter Notebooks In Production? - MLOps Community", "A curated list of awesome Jupyter projects, libraries and resources - GitHub"]
+    },
+    {
+      "name": "Apache Airflow",
+      "category": "orchestration",
+      "definition": "Plateforme de gestion de flux de travail (workflows) pour définir, planifier et monitorer des pipelines de données (DAGs).",
+      "related_tools": ["Python", "Kubernetes"],
+      "source_references": ["Top 20 Data Science Tools in 2026: Workflow-Based Guide for Real-World DS", "MLOps in Practice — Jupyter to Production ML Pipeline 2026 - EITT"]
+    },
+    {
+      "name": "Jupytext",
+      "category": "dev_tools",
+      "definition": "Outil de conversion synchronisant les notebooks (.ipynb) avec des scripts texte pur (.py, .md) pour un versionnement fluide sous Git.",
+      "related_tools": ["Jupyter", "Git"],
+      "source_references": ["DS Professionalism: Notebook best practices : r/datascience - Reddit", "A curated list of awesome Jupyter projects, libraries and resources - GitHub"]
+    },
+    {
+      "name": "Marimo",
+      "category": "dev_tools",
+      "definition": "Environnement de notebook Python réactif et reproductible, sans état caché, qui stocke les documents comme des scripts Python purs.",
+      "related_tools": ["Python", "uv"],
+      "source_references": ["Reinventing notebooks as reusable Python programs - Marimo", "Paradigmes d'Excellence en Data Science : Du Notebook de Prototypage à l'Architecture MLOps et l'Orchestration Agentique Multi-Agents"]
+    },
+    {
+      "name": "dbt (data build tool)",
+      "category": "data_engineering",
+      "definition": "Outil appliquant des principes d'ingénierie logicielle (versioning, tests) aux transformations SQL directement dans les entrepôts de données (T dans ELT).",
+      "related_tools": ["Snowflake", "BigQuery", "Git"],
+      "source_references": ["Top 20 Data Science Tools in 2026: Workflow-Based Guide for Real-World DS", "Advice for new data science team : r/datascience - Reddit"]
+    },
+    {
+      "name": "Polars",
+      "category": "data_engineering",
+      "definition": "Bibliothèque DataFrame implémentée en Rust, optimisée pour le calcul multithreadé ultra-rapide sur des jeux de données volumineux.",
+      "related_tools": ["Apache Arrow", "Pandas"],
+      "source_references": ["Top 20 Data Science Tools in 2026: Workflow-Based Guide for Real-World DS", "Lagged features for time series forecasting - Scikit-learn"]
+    },
+    {
+      "name": "Winsorisation",
+      "category": "data_engineering",
+      "definition": "Transformation statistique visant à limiter l'effet des valeurs aberrantes en plafonnant les extremums à un certain percentile.",
+      "related_tools": ["SciPy", "Pandas"],
+      "source_references": ["Paradigmes d'Excellence en Data Science : Du Notebook de Prototypage à l'Architecture MLOps et l'Orchestration Agentique Multi-Agents"]
+    },
+    {
+      "name": "Pandera",
+      "category": "data_validation",
+      "definition": "Framework de validation de données orienté schémas (typing statistique) fournissant une API flexible pour valider des objets de type DataFrame.",
+      "related_tools": ["Pandas", "Polars", "Pytest", "Hypothesis"],
+      "source_references": ["Pandera: The Open-Source Framework for Data Validation - DZone", "Pandera: Going Beyond Pandas Data Validation - SciPy Proceedings", "pandera documentation"]
+    },
+    {
+      "name": "Great Expectations",
+      "category": "data_validation",
+      "definition": "Framework déclaratif permettant de définir, tester et documenter la qualité des données entrantes dans des pipelines de production.",
+      "related_tools": ["Pandas", "Spark", "SQL"],
+      "source_references": ["Top 20 Data Science Tools in 2026: Workflow-Based Guide for Real-World DS", "How to Build an End-to-End ML Platform Locally: From Experiment ..."]
+    },
+    {
+      "name": "K-Means",
+      "category": "clustering",
+      "definition": "Algorithme de partitionnement non supervisé qui regroupe les données autour de centres (centroïdes). Il présuppose des clusters sphériques.",
+      "related_tools": ["scikit-learn"],
+      "source_references": ["Clustering with KMeans, DBSCAN, and UMAP for Data Science in Microsoft Fabric", "Week #1 Topic: Unsupervised Learning: K-means Clustering: Objective of K-means Optimization"]
+    },
+    {
+      "name": "DBSCAN",
+      "category": "clustering",
+      "definition": "Algorithme de clustering spatial basé sur la densité, efficace pour détecter des formes géométriques arbitraires et isoler le bruit (outliers).",
+      "related_tools": ["scikit-learn", "HDBSCAN"],
+      "source_references": ["Clustering with KMeans, DBSCAN, and UMAP for Data Science in Microsoft Fabric", "The Ultimate Guide to Cluster Analysis — Blog | Keboola"]
+    },
+    {
+      "name": "UMAP",
+      "category": "dimensionality_reduction",
+      "definition": "Technique de réduction de dimensionnalité préservant les topologies locales et globales, très utilisée en pré-traitement avant le clustering et la visualisation.",
+      "related_tools": ["Python", "PCA"],
+      "source_references": ["Clustering with KMeans, DBSCAN, and UMAP for Data Science in Microsoft Fabric", "Top 10 Machine Learning Algorithms Explained - Intuition, Math, Code, and Use Cases"]
+    },
+    {
+      "name": "PCA (Analyse en Composantes Principales)",
+      "category": "dimensionality_reduction",
+      "definition": "Technique de réduction dimensionnelle linéaire qui transforme les données vers des directions de variance maximale pour réduire le bruit.",
+      "related_tools": ["scikit-learn"],
+      "source_references": ["Top 10 Machine Learning Algorithms Explained - Intuition, Math, Code, and Use Cases"]
+    },
+    {
+      "name": "Score de Silhouette",
+      "category": "metrics",
+      "definition": "Métrique évaluant la qualité du clustering en mesurant la similarité d'un objet avec son propre cluster par rapport aux autres clusters.",
+      "related_tools": ["scikit-learn"],
+      "source_references": ["Selecting the number of clusters with silhouette analysis on KMeans clustering - Scikit-learn"]
+    },
+    {
+      "name": "Inertie (WCSS)",
+      "category": "metrics",
+      "definition": "Somme des carrés des écarts intra-classes mesurant la dispersion d'un cluster, couramment utilisée pour la 'méthode du coude'.",
+      "related_tools": ["KMeans", "scikit-learn"],
+      "source_references": ["Paradigmes d'Excellence en Data Science : Du Notebook de Prototypage à l'Architecture MLOps et l'Orchestration Agentique Multi-Agents"]
+    },
+    {
+      "name": "Isolation Forest",
+      "category": "anomaly_detection",
+      "definition": "Algorithme non supervisé basé sur les arbres de décision isolant plus rapidement les valeurs atypiques grâce à une empreinte mémoire réduite.",
+      "related_tools": ["scikit-learn"],
+      "source_references": ["7 Steps to Mastering Time Series Analysis with Python - KDnuggets", "Paradigmes d'Excellence en Data Science : Du Notebook de Prototypage à l'Architecture MLOps et l'Orchestration Agentique Multi-Agents"]
+    },
+    {
+      "name": "XGBoost",
+      "category": "modeling",
+      "definition": "Implémentation d'arbres de décision à gradient boosté (GBDT) hautement optimisée, performante sur les données tabulaires et accélérable par GPU.",
+      "related_tools": ["cuDF", "scikit-learn"],
+      "source_references": ["The Kaggle Grandmasters Playbook: 7 Battle-Tested Modeling Techniques for Tabular Data", "Top 20 Data Science Tools in 2026: Workflow-Based Guide for Real-World DS"]
+    },
+    {
+      "name": "Stacking (Assemblage)",
+      "category": "modeling",
+      "definition": "Méthode d'apprentissage d'ensemble qui entraîne un méta-modèle de second niveau à partir des prédictions validées (OOF) de plusieurs modèles de base.",
+      "related_tools": ["scikit-learn", "cuML"],
+      "source_references": ["The Kaggle Grandmasters Playbook: 7 Battle-Tested Modeling Techniques for Tabular Data"]
+    },
+    {
+      "name": "Pseudo-étiquetage (Pseudo-labeling)",
+      "category": "modeling",
+      "definition": "Technique semi-supervisée utilisant les prédictions (soft labels) d'un modèle initial sur des données non étiquetées pour accroître l'ensemble d'entraînement.",
+      "related_tools": ["cuML", "CatBoost"],
+      "source_references": ["The Kaggle Grandmasters Playbook: 7 Battle-Tested Modeling Techniques for Tabular Data"]
+    },
+    {
+      "name": "Optuna",
+      "category": "mlops",
+      "definition": "Framework open source d'optimisation automatique des hyperparamètres, gérant l'élagage (pruning) dynamique des essais non prometteurs.",
+      "related_tools": ["XGBoost", "Python"],
+      "source_references": ["MLOps in Practice — Jupyter to Production ML Pipeline 2026 - EITT"]
+    },
+    {
+      "name": "Retrieval-Augmented Generation (RAG)",
+      "category": "agentic_ai",
+      "definition": "Architecture enrichissant la génération des LLMs avec un contexte récupéré depuis une base de connaissances vectorielle, limitant ainsi les hallucinations.",
+      "related_tools": ["LlamaIndex", "Haystack", "OpenSearch"],
+      "source_references": ["Agentic AI Frameworks: Top 10 Options in 2026 - NetApp Instaclustr", "The best open source frameworks for building AI agents in 2026 - Firecrawl"]
+    },
+    {
+      "name": "LangGraph",
+      "category": "agentic_ai",
+      "definition": "Framework utilisant des graphes (DAG) pour orchestrer des workflows multi-agents contrôlables, persistants (stateful) et autorisant la supervision humaine.",
+      "related_tools": ["LangChain", "LangSmith"],
+      "source_references": ["The best open source frameworks for building AI agents in 2026 - Firecrawl", "Agentic AI Frameworks: Top 10 Options in 2026 - NetApp Instaclustr", "Open Source Agentic Frameworks: LangGraph vs CrewAI & More - Prem AI"]
+    },
+    {
+      "name": "CrewAI",
+      "category": "agentic_ai",
+      "definition": "Framework multi-agents basé sur l'assignation de rôles spécifiques au sein d'une équipe pour exécuter des flux déterministes.",
+      "related_tools": ["LangChain", "OpenAI"],
+      "source_references": ["CrewAI vs AutoGen vs Microsoft Agent Framework: 2026 Guide - Kanerika", "What is crewAI? - IBM"]
+    },
+    {
+      "name": "AutoGen",
+      "category": "agentic_ai",
+      "definition": "Framework développé par Microsoft axé sur des conversations multi-agents asynchrones et pilotées par des événements.",
+      "related_tools": ["Microsoft Agent Framework", "Semantic Kernel"],
+      "source_references": ["CrewAI vs AutoGen vs Microsoft Agent Framework: 2026 Guide - Kanerika", "The best open source frameworks for building AI agents in 2026 - Firecrawl"]
+    },
+    {
+      "name": "Semantic Kernel",
+      "category": "agentic_ai",
+      "definition": "SDK d'orchestration agentique enterprise de Microsoft intégrant des LLM via des 'compétences' pour des applications C#, Java et Python.",
+      "related_tools": ["Azure OpenAI", "C#"],
+      "source_references": ["Agentic AI Frameworks: Top 10 Options in 2026 - NetApp Instaclustr", "The best open source frameworks for building AI agents in 2026 - Firecrawl"]
+    },
+    {
+      "name": "Haystack",
+      "category": "agentic_ai",
+      "definition": "Framework orienté pipeline modulaire, hautement spécialisé pour les pipelines RAG et le traitement de collections de documents complexes.",
+      "related_tools": ["Elasticsearch", "Pinecone", "Weaviate"],
+      "source_references": ["The best open source frameworks for building AI agents in 2026 - Firecrawl", "Agentic AI Frameworks: Top 10 Options in 2026 - NetApp Instaclustr"]
+    },
+    {
+      "name": "Smolagents",
+      "category": "agentic_ai",
+      "definition": "Framework minimaliste poussé par Hugging Face utilisant un CodeAgent qui génère et exécute du code Python en mode sandbox plutôt que du JSON classique.",
+      "related_tools": ["Python", "Hugging Face Models"],
+      "source_references": ["The best open source frameworks for building AI agents in 2026 - Firecrawl", "Open Source Agentic Frameworks: LangGraph vs CrewAI & More - Prem AI"]
+    },
+    {
+      "name": "Mastra",
+      "category": "agentic_ai",
+      "definition": "Framework d'orchestration agentique natif TypeScript offrant des workflows par graphe, routage multi-agents et mémoire multi-niveaux.",
+      "related_tools": ["TypeScript", "Vercel AI SDK"],
+      "source_references": ["The best open source frameworks for building AI agents in 2026 - Firecrawl"]
+    },
+    {
+      "name": "Dify",
+      "category": "agentic_ai",
+      "definition": "Plateforme low-code open source combinant des agents IA avec interface visuelle, gestion du RAG natif et orchestration de workflows.",
+      "related_tools": ["TiDB", "LLMs"],
+      "source_references": ["The best open source frameworks for building AI agents in 2026 - Firecrawl"]
+    },
+    {
+      "name": "Composio",
+      "category": "agentic_ai",
+      "definition": "Framework d'orchestration et d'intégration d'outils offrant une planification hiérarchique complexe et la gestion d'APIs tierces.",
+      "related_tools": ["LangChain", "LLMs"],
+      "source_references": ["Open Source Agentic Frameworks: LangGraph vs CrewAI & More - Prem AI"]
+    },
+    {
+      "name": "Orchestration basée sur les graphes",
+      "category": "agentic_ai",
+      "definition": "Modèle d'exécution limitant l'autonomie imprévisible des agents en contraignant leur flux via un graphe orienté explicite.",
+      "related_tools": ["LangGraph", "OpenAI Agents SDK"],
+      "source_references": ["Top Agentic Frameworks for Building Applications 2026 | The PyCharm Blog"]
+    },
+    {
+      "name": "Orchestration basée sur les chaînes",
+      "category": "agentic_ai",
+      "definition": "Modèle adaptatif où les agents opèrent dans des boucles dynamiques et décident de l'étape suivante, idéal pour l'exploration mais complexe à déboguer.",
+      "related_tools": ["LangChain"],
+      "source_references": ["Top Agentic Frameworks for Building Applications 2026 | The PyCharm Blog"]
+    },
+    {
+      "name": "Model Context Protocol (MCP)",
+      "category": "agentic_ai",
+      "definition": "Standard de communication open-source favorisant l'intégration sécurisée de données contextuelles et d'outils externes par les agents IA.",
+      "related_tools": ["Claude Code", "Cursor"],
+      "source_references": ["What is crewAI? - IBM", "The best open source frameworks for building AI agents in 2026 - Firecrawl"]
+    },
+    {
+      "name": "Docker",
+      "category": "mlops",
+      "definition": "Plateforme de conteneurisation assurant la consistance environnementale pour déployer des applications ML sans problème de dépendances.",
+      "related_tools": ["Kubernetes", "FastAPI"],
+      "source_references": ["Build Your First MLOps Pipeline in 90 Minutes - KodeKloud", "How to Build an End-to-End ML Platform Locally: From Experiment ..."]
+    },
+    {
+      "name": "Notebook-Driven Development (NDD)",
+      "category": "dev_tools",
+      "definition": "Méthodologie prônant l'utilisation des notebooks comme composants de première classe dans les pipelines de production ML et Data Engineering, souvent via des outils comme Papermill ou Jupytext.",
+      "related_tools": ["Papermill", "Jupytext", "Marimo"],
+      "source_references": ["The Rise of Notebook-First Data Engineering", "Notebook-Driven Development: A Pragmatic Evolution for Modern Data Science"]
+    },
+    {
+      "name": "End-to-End MLOps Pipeline",
+      "category": "mlops",
+      "definition": "Architecture complète automatisant le cycle de vie d'un modèle : de l'ingestion des données à l'entraînement, suivi (tracking), registre, et exposition via une API REST (ex: FastAPI) conteneurisée.",
+      "related_tools": ["MLflow", "FastAPI", "Docker", "XGBoost"],
+      "source_references": ["Building an End-to-End Student Dropout Prediction ML Pipeline", "Build Your First MLOps Pipeline in 90 Minutes"]
+    },
+    {
+      "name": "Data Leakage",
+      "category": "validation",
+      "definition": "Problème critique survenant lorsqu'une information de l'ensemble de test ou du futur se retrouve accidentellement dans l'ensemble d'entraînement, gonflant artificiellement les performances.",
+      "related_tools": ["Scikit-learn Pipeline", "TimeSeriesSplit"],
+      "source_references": ["MLshorts 53: Your ML model might be lying to you - AI Mind"]
+    },
+    {
+      "name": "Cyclical Feature Encoding",
+      "category": "feature_engineering",
+      "definition": "Transformation de caractéristiques temporelles (heures, mois) via sinus et cosinus pour conserver la continuité circulaire du temps pour les modèles ML.",
+      "related_tools": ["NumPy", "SplineTransformer"],
+      "source_references": ["Time-related feature engineering - scikit-learn doc"]
+    },
+    {
+      "name": "Marketing Mix Modeling (MMM)",
+      "category": "modeling",
+      "definition": "Analyse de séries temporelles quantifiant l'impact des différents canaux marketing sur les ventes, en modélisant les effets retardés (Adstock) et de saturation.",
+      "related_tools": ["XGBoost", "Ridge Regression"],
+      "source_references": ["Improving Marketing Mix Modeling Using Machine Learning Approaches"]
+    },
+    {
+      "name": "Architecture Agentique à 3 Couches",
+      "category": "agentic_ai",
+      "definition": "Modèle d'architecture d'entreprise divisant les systèmes en Couche d'Orchestration (plan de contrôle), Couche Cognitive (raisonnement) et Couche des Outils (action).",
+      "related_tools": ["LangGraph", "MCP", "LLMs"],
+      "source_references": ["Leadership in Agentic AI - Module 2 : Architecting the Agentic Enterprise"]
+    },
+    {
+      "name": "Société d'Agents",
+      "category": "agentic_ai",
+      "definition": "Paradigme où des flux de travail complexes sont gérés par un réseau d'agents hautement spécialisés coordonnés par un orchestrateur, évitant la surcharge de contexte des agents généralistes.",
+      "related_tools": ["CrewAI", "LangGraph"],
+      "source_references": ["Leadership in Agentic AI - Module 2 : Architecting the Agentic Enterprise"]
+    },
+    {
+      "name": "Agentic TCO",
+      "category": "mlops",
+      "definition": "Évaluation du Coût Total de Possession incluant l'inférence continue, la maintenance de l'orchestration et des pipelines, justifié par la valeur de l'amélioration composée.",
+      "related_tools": ["MLflow", "Cloud Billing"],
+      "source_references": ["Leadership in Agentic AI - Module 3: The Economics of Autonomy"]
+    }
+  ]
+}

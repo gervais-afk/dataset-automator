@@ -1,0 +1,245 @@
+{
+  "procedures": [
+    {
+      "title": "Implement Stacking Ensemble for Tabular Data",
+      "domain": "supervised_learning",
+      "objective": "Combiner les prédictions de plusieurs modèles de base hétérogènes (linéaires, arbres, réseaux de neurones) via un méta-modèle (Stage 2) pour extraire plus de signal.",
+      "steps": [
+        {
+          "order": 1,
+          "action": "Entraîner des modèles de base diversifiés de manière croisée",
+          "code_snippet": "from sklearn.ensemble import RandomForestClassifier\nfrom xgboost import XGBClassifier\nfrom lightgbm import LGBMClassifier\n\nbase_models = [\n    ('rf', RandomForestClassifier(n_estimators=500)),\n    ('xgb', XGBClassifier(tree_method='gpu_hist')),\n    ('lgbm', LGBMClassifier(device='gpu'))\n]",
+          "tools_required": ["scikit-learn", "XGBoost", "LightGBM"]
+        },
+        {
+          "order": 2,
+          "action": "Générer les caractéristiques OOF (Out-Of-Fold) ou les résidus",
+          "code_snippet": "from sklearn.model_selection import cross_val_predict\nmeta_features = np.column_stack([\n    cross_val_predict(model, X_train, y_train, cv=5, method='predict_proba')\n    for name, model in base_models\n])"
+        },
+        {
+          "order": 3,
+          "action": "Entraîner le méta-modèle de second niveau",
+          "code_snippet": "from sklearn.linear_model import LogisticRegression\nmeta_model = LogisticRegression()\nmeta_model.fit(meta_features, y_train)",
+          "tools_required": ["scikit-learn", "cuML"]
+        }
+      ]
+    },
+    {
+      "title": "Apply Pseudo-Labeling for Semi-Supervised Learning",
+      "domain": "supervised_learning",
+      "objective": "Transformer des données non étiquetées en signaux d'entraînement pour améliorer la robustesse et la généralisation du modèle.",
+      "steps": [
+        {
+          "order": 1,
+          "action": "Prédire des étiquettes souples sur les données non labellisées",
+          "code_snippet": "pseudo_labels = best_model.predict_proba(X_unlabeled)"
+        },
+        {
+          "order": 2,
+          "action": "Intégrer les pseudo-étiquettes aux données d'entraînement",
+          "code_snippet": "X_combined = np.vstack((X_train, X_unlabeled))\ny_combined = np.concatenate((y_train, pseudo_labels))"
+        },
+        {
+          "order": 3,
+          "action": "Réentraîner ou affiner le modèle",
+          "code_snippet": "new_model.fit(X_combined, y_combined)\nnew_model.fit(X_train, y_train)"
+        }
+      ]
+    },
+    {
+      "title": "Tune XGBoost Hyperparameters and Extra Training",
+      "domain": "supervised_learning",
+      "objective": "Optimiser les paramètres des modèles basés sur les arbres.",
+      "steps": [
+        {
+          "order": 1,
+          "action": "Ajuster les hyperparamètres clés de XGBoost",
+          "code_snippet": "xgb_params = {'learning_rate': 0.05, 'max_depth': 6, 'n_estimators': 1000}"
+        },
+        {
+          "order": 2,
+          "action": "S'entraîner avec différents Random Seeds",
+          "code_snippet": "preds = []\nfor seed in range(10):\n    model = XGBClassifier(random_state=seed, **xgb_params)\n    model.fit(X_train, y_train)\n    preds.append(model.predict_proba(X_test))\nfinal_preds = np.mean(preds, axis=0)"
+        },
+        {
+          "order": 3,
+          "action": "Réentraîner le modèle final sur 100% des données",
+          "code_snippet": "final_model = XGBClassifier(**best_params)\nfinal_model.fit(X_full, y_full)"
+        }
+      ]
+    },
+    {
+      "title": "Handle Class Imbalance",
+      "domain": "supervised_learning",
+      "steps": [
+        {
+          "order": 1,
+          "action": "Appliquer des poids compensatoires",
+          "code_snippet": "from sklearn.ensemble import RandomForestClassifier\nrf = RandomForestClassifier(class_weight='balanced')"
+        },
+        {
+          "order": 2,
+          "action": "Traiter les valeurs extrêmes",
+          "code_snippet": "from scipy.stats.mstats import winsorize\nX_train['feature'] = winsorize(X_train['feature'], limits=[0.01, 0.01])"
+        }
+      ]
+    },
+    {
+      "title": "Feature Engineering for Gradient Boosting",
+      "domain": "supervised_learning",
+      "steps": [
+        {
+          "order": 1,
+          "action": "Combiner des colonnes catégorielles",
+          "code_snippet": "for i, c1 in enumerate(CATS[:-1]):\n    for j, c2 in enumerate(CATS[i+1:]):\n        n = f'{c1}_{c2}'\n        train[n] = train[c1].astype('str') + '_' + train[c2].astype('str')"
+        }
+      ]
+    },
+    {
+      "title": "Setup Data Validation with Pandera Schemas",
+      "domain": "data_engineering",
+      "steps": [
+        {
+          "order": 1,
+          "action": "Définir un schéma basé sur les classes",
+          "code_snippet": "import pandera as pa\nfrom pandera.typing import Series\n\nclass TransactionSchema(pa.DataFrameModel):\n    amount: Series[float] = pa.Field(gt=0, le=50000)\n    merchant_category: Series[str] = pa.Field(isin=['retail', 'food'])"
+        },
+        {
+          "order": 2,
+          "action": "Valider paresseusement en production",
+          "code_snippet": "try:\n    validated_df = TransactionSchema.validate(df, lazy=True)\nexcept pa.errors.SchemaErrors as err:\n    print(err.failure_cases)"
+        }
+      ]
+    },
+    {
+      "title": "Transform Data with dbt",
+      "domain": "data_engineering",
+      "steps": [
+        {
+          "order": 1,
+          "action": "Définir les transformations SQL modulaires",
+          "code_snippet": "SELECT customer_id, SUM(amount) \nFROM {{ ref('stg_transactions') }} \nGROUP BY 1"
+        }
+      ]
+    },
+    {
+      "title": "Automate Notebooks with Papermill",
+      "domain": "data_engineering",
+      "steps": [
+        {
+          "order": 1,
+          "action": "Orchestrer l'exécution automatisée",
+          "code_snippet": "papermill input_notebook.ipynb output_notebook.ipynb -p execution_date '2026-06-08'"
+        }
+      ]
+    },
+    {
+      "title": "Convert Notebooks to Scripts with Jupytext",
+      "domain": "data_engineering",
+      "steps": [
+        {
+          "order": 1,
+          "action": "Configurer la synchronisation Jupytext",
+          "code_snippet": "jupytext --set-formats ipynb,py:percent notebook.ipynb"
+        }
+      ]
+    },
+    {
+      "title": "Build Reactive Notebooks with Marimo",
+      "domain": "data_engineering",
+      "steps": [
+        {
+          "order": 1,
+          "action": "Initialiser un notebook réactif",
+          "code_snippet": "import marimo as mo\napp = mo.App()"
+        }
+      ]
+    },
+    {
+      "title": "Handle Outliers with Winsorization",
+      "domain": "data_engineering",
+      "steps": [
+        {
+          "order": 1,
+          "action": "Appliquer la winsorisation",
+          "code_snippet": "from scipy.stats.mstats import winsorize\ndf['age_winsorized'] = winsorize(df['age'], limits=[0.01, 0.01])"
+        }
+      ]
+    },
+    {
+      "title": "Process Large DataFrames with Polars",
+      "domain": "data_engineering",
+      "steps": [
+        {
+          "order": 1,
+          "action": "Charger les données",
+          "code_snippet": "import polars as pl\ndf = pl.read_parquet('data.parquet')"
+        },
+        {
+          "order": 2,
+          "action": "Appliquer des transformations",
+          "code_snippet": "df = df.with_columns([pl.col('count').shift(1).alias('lag_1')])"
+        }
+      ]
+    },
+    {
+      "title": "Build Stateful Agent Workflow with LangGraph",
+      "domain": "agentic_ai",
+      "steps": [
+        {
+          "order": 1,
+          "action": "Définir le graphe d'états (DAG) et les nœuds",
+          "code_snippet": "from langgraph.graph import StateGraph\nworkflow = StateGraph(AgentState)\nworkflow.add_node('researcher', research_agent)\nworkflow.add_node('writer', writer_agent)"
+        },
+        {
+          "order": 2,
+          "action": "Configurer le routage",
+          "code_snippet": "workflow.add_edge('researcher', 'writer')\nworkflow.add_conditional_edges('writer', check_quality, {'approve': 'human_review', 'reject': 'researcher'})"
+        }
+      ]
+    },
+    {
+      "title": "Create Multi-Agent Team with CrewAI",
+      "domain": "agentic_ai",
+      "steps": [
+        {
+          "order": 1,
+          "action": "Instancier les agents",
+          "code_snippet": "from crewai import Agent\nresearcher = Agent(role='Researcher', goal='Find latest AI trends', backstory='Expert data gatherer')\nwriter = Agent(role='Writer', goal='Draft blog post', backstory='Tech writer')"
+        },
+        {
+          "order": 2,
+          "action": "Définir les tâches",
+          "code_snippet": "from crewai import Task\ntask1 = Task(description='Research agentic AI', expected_output='Bullet points', agent=researcher)\ntask2 = Task(description='Write post', expected_output='Markdown blog', agent=writer)"
+        },
+        {
+          "order": 3,
+          "action": "Assembler le Crew",
+          "code_snippet": "from crewai import Crew, Process\ncrew = Crew(agents=[researcher, writer], tasks=[task1, task2], process=Process.sequential)"
+        }
+      ]
+    },
+    {
+      "title": "Implement RAG Pipeline with Haystack",
+      "domain": "agentic_ai",
+      "steps": [
+        {
+          "order": 1,
+          "action": "Créer un pipeline modulaire",
+          "code_snippet": "from haystack import Pipeline\nfrom haystack.components.retrievers.in_memory import InMemoryBM25Retriever\nfrom haystack.components.generators import OpenAIGenerator\npipeline = Pipeline()\npipeline.add_component('retriever', InMemoryBM25Retriever(document_store=document_store))\npipeline.add_component('generator', OpenAIGenerator())"
+        }
+      ]
+    },
+    {
+      "title": "Build Code-Generating Agent with Smolagents",
+      "domain": "agentic_ai",
+      "steps": [
+        {
+          "order": 1,
+          "action": "Initialiser le CodeAgent avec un LLM",
+          "code_snippet": "from smolagents import CodeAgent, HfApiModel\nmodel = HfApiModel()\nagent = CodeAgent(tools=[], model=model)"
+        }
+      ]
+    }
+  ]
+}

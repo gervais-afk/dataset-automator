@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neo4j : Graphe de Connaissances Camerounais</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@300;400;600&display=swap');
+
+        :root {
+            --bg-dark: #0a0f1a;
+            --card-bg: rgba(20, 30, 48, 0.6);
+            --cam-green: #007a5e;
+            --cam-red: #ce1126;
+            --cam-yellow: #fcd116;
+            --accent-neon: #00f3ff;
+            --text-main: #f8f9fa;
+            --text-muted: #adb5bd;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 122, 94, 0.15), transparent 25%),
+                radial-gradient(circle at 90% 80%, rgba(206, 17, 38, 0.10), transparent 25%),
+                radial-gradient(circle at 50% 50%, rgba(252, 209, 22, 0.05), transparent 30%);
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+
+        header {
+            text-align: center;
+            padding: 4rem 2rem 2rem;
+            position: relative;
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin: 0;
+            background: linear-gradient(90deg, var(--cam-green), var(--cam-yellow), var(--cam-red));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(252, 209, 22, 0.2);
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            margin-top: 1rem;
+            font-weight: 300;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        /* Glassmorphism Card */
+        .card {
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Top Accent Lines based on flag colors */
+        .card:nth-child(1)::before { background: var(--cam-green); }
+        .card:nth-child(2)::before { background: var(--cam-red); }
+        .card:nth-child(3)::before { background: var(--cam-yellow); }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 4px;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+
+        .card h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8rem;
+            margin-top: 0;
+            margin-bottom: 1rem;
+            color: white;
+        }
+
+        .card p {
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            flex-grow: 1;
+        }
+
+        .card-img {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            border-radius: 16px;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .hero-section {
+            grid-column: span 3;
+            display: flex;
+            align-items: center;
+            gap: 3rem;
+            margin-bottom: 2rem;
+            background: linear-gradient(135deg, rgba(0,122,94,0.1), rgba(206,17,38,0.1));
+        }
+
+        .hero-section .card-img {
+            width: 50%;
+            height: 400px;
+            margin-bottom: 0;
+        }
+
+        @media (max-width: 968px) {
+            .grid { grid-template-columns: 1fr; }
+            .hero-section { flex-direction: column; }
+            .hero-section .card-img { width: 100%; height: 250px; }
+            h1 { font-size: 2.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Graph RAG & Données Souveraines</h1>
+        <div class="subtitle">Exploiter la puissance de <b>Neo4j</b> pour structurer, lier et interroger les données stratégiques du Cameroun via une Intelligence Artificielle Agentique et contextualisée.</div>
+    </header>
+
+    <div class="container">
+        <div class="grid">
+            
+            <!-- Hero -->
+            <div class="card hero-section">
+                <img src="file:///C:/Users/HP/.gemini/antigravity-ide/brain/c089060b-1864-46b2-ad01-f754c96a4bfa/neo4j_cameroon_map_1781119365758.png" alt="Map Cameroun Neo4j" class="card-img">
+                <div>
+                    <h2 style="font-size: 2.5rem;">Souveraineté des Données</h2>
+                    <p style="font-size: 1.1rem;">La modélisation en graphe permet de cartographier l'écosystème local. Des données géographiques, économiques aux entités réglementaires, <b>Neo4j</b> révèle les relations cachées qui façonnent les stratégies de développement national. Le système garantit que l'IA Raisonne sur une vérité ancrée dans le contexte Camerounais.</p>
+                </div>
+            </div>
+
+            <!-- Ingestion -->
+            <div class="card">
+                <img src="file:///C:/Users/HP/.gemini/antigravity-ide/brain/c089060b-1864-46b2-ad01-f754c96a4bfa/neo4j_rag_ingest_1781119390579.png" alt="RAG Ingestion" class="card-img">
+                <h2>Ingestion Sémantique</h2>
+                <p>Les documents bruts (rapports, lois, datasets MLOps) ne sont pas simplement indexés. L'orchestrateur (<code>ts-orchestrator</code>) extrait sémantiquement les Entités et Concepts, créant des relations causales (ex: <i>REQUIRES</i>, <i>IMPLEMENTED_BY</i>) dans Neo4j.</p>
+            </div>
+
+            <!-- Query -->
+            <div class="card">
+                <img src="file:///C:/Users/HP/.gemini/antigravity-ide/brain/c089060b-1864-46b2-ad01-f754c96a4bfa/neo4j_query_1781119413544.png" alt="Neo4j Query" class="card-img">
+                <h2>Interrogation Agentique</h2>
+                <p>Lorsqu'un utilisateur interroge le système, les agents IA (via LangGraph) génèrent des requêtes Cypher intelligentes. Au lieu de chercher des mots-clés, l'agent explore le graphe pour fournir des réponses ultra-précises, sourcées et dépourvues d'hallucinations.</p>
+            </div>
+
+            <!-- Value -->
+            <div class="card">
+                <div style="height: 220px; display:flex; align-items:center; justify-content:center; border: 1px solid rgba(255,255,255,0.05); border-radius:16px; margin-bottom:1.5rem; background:rgba(0,0,0,0.3);">
+                    <h1 style="font-size:4rem; margin:0; background:var(--accent-neon); -webkit-background-clip:text;">R.A.G</h1>
+                </div>
+                <h2>Retrieval-Augmented Generation</h2>
+                <p>L'alliance parfaite : La logique de la base de données orientée graphe (Neo4j) rencontre les capacités cognitives des LLMs (Couche de Raisonnement). C'est le moteur de l'Entreprise Agentique souveraine.</p>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const cards = document.querySelectorAll('.card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(30px)';
+                setTimeout(() => {
+                    card.style.transition = 'all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 150 + 100);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pipeline MLOps Industriel</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@300;400;600&display=swap');
+
+        :root {
+            --bg-dark: #0a0f1a;
+            --card-bg: rgba(20, 30, 48, 0.6);
+            --accent-purple: #9d4edd;
+            --accent-teal: #00f3ff;
+            --accent-blue: #3a86ff;
+            --accent-green: #00ff88;
+            --text-main: #f8f9fa;
+            --text-muted: #adb5bd;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(157, 78, 221, 0.10), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(0, 243, 255, 0.10), transparent 25%);
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+
+        header {
+            text-align: center;
+            padding: 4rem 2rem 2rem;
+            position: relative;
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin: 0;
+            background: linear-gradient(90deg, var(--accent-teal), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(0, 243, 255, 0.3);
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            margin-top: 1rem;
+            font-weight: 300;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Timeline Layout */
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 3rem;
+            position: relative;
+        }
+
+        /* Ligne de connexion verticale */
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            bottom: 20px;
+            left: 50%;
+            width: 4px;
+            background: linear-gradient(to bottom, var(--accent-purple), var(--accent-teal), var(--accent-blue), var(--accent-green));
+            transform: translateX(-50%);
+            border-radius: 4px;
+            z-index: 0;
+        }
+
+        /* Glassmorphism Card */
+        .card {
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+            transition: transform 0.4s ease, box-shadow 0.4s ease;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            width: 80%;
+        }
+
+        .card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.2);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        /* Alignement gauche/droite */
+        .card:nth-child(odd) {
+            align-self: flex-start;
+            flex-direction: row;
+        }
+
+        .card:nth-child(even) {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+            text-align: right;
+        }
+
+        /* Points sur la timeline */
+        .card::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 20px;
+            height: 20px;
+            background: var(--bg-dark);
+            border: 4px solid;
+            border-radius: 50%;
+            transform: translateY(-50%);
+            z-index: 2;
+        }
+
+        .card:nth-child(1)::after { border-color: var(--accent-purple); right: -12.5%; }
+        .card:nth-child(2)::after { border-color: var(--accent-teal); left: -12.5%; }
+        .card:nth-child(3)::after { border-color: var(--accent-blue); right: -12.5%; }
+        .card:nth-child(4)::after { border-color: var(--accent-green); left: -12.5%; }
+
+
+        .card h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2rem;
+            margin-top: 0;
+            margin-bottom: 1rem;
+            color: white;
+        }
+
+        .card p {
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-img {
+            width: 300px;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.05);
+            flex-shrink: 0;
+        }
+
+        .tags {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .card:nth-child(even) .tags {
+            justify-content: flex-end;
+        }
+
+        .tag {
+            padding: 0.4rem 1rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        @media (max-width: 968px) {
+            .timeline::before { left: 20px; }
+            .card { width: calc(100% - 60px); align-self: flex-end !important; flex-direction: column !important; text-align: left !important; margin-left: 60px;}
+            .card::after { left: -50px !important; }
+            .card-img { width: 100%; height: auto; }
+            .card:nth-child(even) .tags { justify-content: flex-start; }
+            h1 { font-size: 2.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Pipeline MLOps Industriel</h1>
+        <div class="subtitle">De l'exploration Jupyter à l'inférence en production.</div>
+    </header>
+
+    <div class="container">
+        <div class="timeline">
+            
+            <!-- Step 1 -->
+            <div class="card">
+                <img src="file:///C:/Users/HP/.gemini/antigravity-ide/brain/c089060b-1864-46b2-ad01-f754c96a4bfa/mlops_jupyter_1781119304705.png" alt="Jupyter" class="card-img">
+                <div class="content">
+                    <h2 style="color: var(--accent-purple)">1. Exploration & Prototypage</h2>
+                    <p>L'aventure commence dans <b>Jupyter Notebooks</b>. Les data scientists explorent les données, réalisent l'Analyse Exploratoire des Données (EDA) et testent les premiers algorithmes (Random Forest, XGBoost) de manière interactive.</p>
+                    <div class="tags">
+                        <span class="tag">Jupyter</span>
+                        <span class="tag">EDA</span>
+                        <span class="tag">Prototyping</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="card">
+                <img src="file:///C:/Users/HP/.gemini/antigravity-ide/brain/c089060b-1864-46b2-ad01-f754c96a4bfa/mlops_dvc_1781119322430.png" alt="DVC" class="card-img">
+                <div class="content">
+                    <h2 style="color: var(--accent-teal)">2. Data Version Control (DVC)</h2>
+                    <p>Le code est versionné avec Git, mais les grands ensembles de données ne peuvent pas l'être. <b>DVC</b> agit comme un pont, versionnant les pipelines de données et les datasets volumineux sur un stockage cloud (S3) tout en restant lié à Git.</p>
+                    <div class="tags">
+                        <span class="tag">Git</span>
+                        <span class="tag">DVC</span>
+                        <span class="tag">Data Versioning</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="card">
+                <img src="file:///C:/Users/HP/.gemini/antigravity-ide/brain/c089060b-1864-46b2-ad01-f754c96a4bfa/mlops_mlflow_1781119335209.png" alt="MLflow" class="card-img">
+                <div class="content">
+                    <h2 style="color: var(--accent-blue)">3. Experiment Tracking (MLflow)</h2>
+                    <p>Les scripts d'entraînement sont automatisés. <b>MLflow</b> enregistre chaque expérimentation : hyperparamètres, métriques de performance (RMSE, ROC-AUC) et artefacts de modèles. Le meilleur modèle est promu dans le <i>Model Registry</i>.</p>
+                    <div class="tags">
+                        <span class="tag">MLflow</span>
+                        <span class="tag">Tracking</span>
+                        <span class="tag">Model Registry</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="card">
+                <img src="file:///C:/Users/HP/.gemini/antigravity-ide/brain/c089060b-1864-46b2-ad01-f754c96a4bfa/mlops_deploy_1781119352400.png" alt="Deploy" class="card-img">
+                <div class="content">
+                    <h2 style="color: var(--accent-green)">4. Déploiement & Serving</h2>
+                    <p>Le modèle promu est packagé via Docker et exposé sous forme d'API REST via <b>FastAPI</b>. Pour des charges de production massives, le conteneur est déployé sur un cluster <b>Kubernetes</b> garantissant auto-scaling et haute disponibilité.</p>
+                    <div class="tags">
+                        <span class="tag">FastAPI</span>
+                        <span class="tag">Docker</span>
+                        <span class="tag">Kubernetes</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const cards = document.querySelectorAll('.card');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if(entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = entry.target.style.transform.replace('translateY(50px)', 'translateY(0)');
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform += ' translateY(50px)';
+                observer.observe(card);
+            });
+        });
+    </script>
+</body>
+</html>

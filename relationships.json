@@ -1,0 +1,193 @@
+{
+  "relationships": [
+    {
+      "source": "Differencing",
+      "target": "Stationarity",
+      "type": "ENABLES",
+      "evidence": "Most classical models require stationarity; most real-world series lack it and need differencing or transformation (7 Steps to Mastering Time Series Analysis with Python - KDnuggets)",
+      "strength": 0.95
+    },
+    {
+      "source": "Stationarity",
+      "target": "Classical Statistical Models (ARIMA)",
+      "type": "PREREQUISITE",
+      "evidence": "Most classical models require stationarity; most real-world series lack it and need differencing (7 Steps to Mastering Time Series Analysis with Python - KDnuggets)",
+      "strength": 0.9
+    },
+    {
+      "source": "Database Backend",
+      "target": "MLflow Model Registry",
+      "type": "PREREQUISITE",
+      "evidence": "The model registry only works with a database backend. (Build Your First MLOps Pipeline in 90 Minutes - KodeKloud)",
+      "strength": 1.0
+    },
+    {
+      "source": "Docker",
+      "target": "Environment Consistency",
+      "type": "ENABLES",
+      "evidence": "Docker ensures the same environment and dependencies in development and deployment, avoiding the classic 'works on my machine' problem. (How to Build an End-to-End ML Platform Locally: From Experiment ...)",
+      "strength": 0.9
+    },
+    {
+      "source": "Feast",
+      "target": "Training-Serving Skew Prevention",
+      "type": "ENABLES",
+      "evidence": "Feast (Feature Store) is an open-source feature store that helps manage and serve features consistently between training and inference. This prevents a common problem called 'training-serving skew' (How to Build an End-to-End ML Platform Locally: From Experiment ...)",
+      "strength": 0.95
+    },
+    {
+      "source": "Great Expectations",
+      "target": "Data Validation",
+      "type": "ENABLES",
+      "evidence": "Great Expectations is an open-source tool for data quality testing – defining rules (expectations) and testing data against them... Bad data is rejected before it can harm predictions. (How to Build an End-to-End ML Platform Locally: From Experiment ...)",
+      "strength": 0.9
+    },
+    {
+      "source": "CrewAI",
+      "target": "AutoGen",
+      "type": "ALTERNATIVE_TO",
+      "evidence": "CrewAI assigns agents fixed roles inside a structured crew. AutoGen let agents communicate conversationally to solve problems. (CrewAI vs AutoGen vs Microsoft Agent Framework: 2026 Guide - Kanerika)",
+      "strength": 0.85
+    },
+    {
+      "source": "LangGraph",
+      "target": "LangChain",
+      "type": "PART_OF",
+      "evidence": "LangGraph is a specialized agent framework within the LangChain ecosystem. (The best open source frameworks for building AI agents in 2026 - Firecrawl)",
+      "strength": 0.95
+    },
+    {
+      "source": "Semantic Kernel",
+      "target": "Microsoft Agent Framework",
+      "type": "PART_OF",
+      "evidence": "In October 2025, Microsoft merged AutoGen with Semantic Kernel into the unified Microsoft Agent Framework (The best open source frameworks for building AI agents in 2026 - Firecrawl)",
+      "strength": 1.0
+    },
+    {
+      "source": "Haystack",
+      "target": "Retrieval-Augmented Generation (RAG)",
+      "type": "ENABLES",
+      "evidence": "Haystack by deepset is the most RAG-native framework on this list. Where other frameworks treat retrieval-augmented generation as one feature among many, Haystack builds everything around it. (The best open source frameworks for building AI agents in 2026 - Firecrawl)",
+      "strength": 0.9
+    },
+    {
+      "source": "Smolagents",
+      "target": "LangGraph",
+      "type": "ALTERNATIVE_TO",
+      "evidence": "For a single-agent loop without heavy orchestration overhead, Smolagents is the fastest setup. For multi-agent systems with complex branching and error handling, LangGraph gives you the most control. (The best open source frameworks for building AI agents in 2026 - Firecrawl)",
+      "strength": 0.85
+    },
+    {
+      "source": "SplineTransformer",
+      "target": "Periodic Features",
+      "type": "ENABLES",
+      "evidence": "The periodic spline-based features fix those two problems at once: they give more expressivity to the linear model... furthermore the extrapolation='periodic' option enforces a smooth representation between hour=23 and hour=0. (Time-related feature engineering — scikit-learn 1.9.0 documentation)",
+      "strength": 0.9
+    },
+    {
+      "source": "Pandera",
+      "target": "DataFrame Validation",
+      "type": "ENABLES",
+      "evidence": "Pandera is an open-source library for validating DataFrame-like objects (such as pandas, Polars, and Dask) by defining schemas that specify column names, data types, and statistical properties. (Pandera: The Open-Source Framework for Data Validation - DZone)",
+      "strength": 0.95
+    },
+    {
+      "source": "Jupytext",
+      "target": "Git Versioning",
+      "type": "ENABLES",
+      "evidence": "Jupytext - Convert and synchronize notebooks with text formats (e.g. Python or Markdown files) that work well under version control. (A curated list of awesome Jupyter projects, libraries and resources - GitHub)",
+      "strength": 0.9
+    },
+    {
+      "source": "PCA",
+      "target": "K-Means",
+      "type": "ENABLES",
+      "evidence": "K-Means et la PCA partagent une relation mathématique étroite, car les axes principaux identifiés par la PCA décrivent les directions de variance maximale dans lesquelles les centroïdes du K-Means tendent à s'aligner (Paradigmes d'Excellence en Data Science : Du Notebook de Prototypage à l'Architecture MLOps...)",
+      "strength": 0.8
+    },
+    {
+      "source": "Base Models",
+      "target": "Stacking",
+      "type": "PART_OF",
+      "evidence": "Stacking takes ensembling a step further by training one model on the outputs of others. Instead of averaging predictions with weights (like hill climbing), stacking builds a second-level model that learns how best to combine the outputs of other models. (The Kaggle Grandmasters Playbook: 7 Battle-Tested Modeling Techniques for Tabular Data)",
+      "strength": 0.9
+    },
+    {
+      "source": "Evidently AI",
+      "target": "Model Drift Detection",
+      "type": "ENABLES",
+      "evidence": "Evidently is an open-source library specifically designed for ML monitoring. It can detect drift, generate reports, and integrate with monitoring systems. (How to Build an End-to-End ML Platform Locally: From Experiment ...)",
+      "strength": 0.95
+    },
+    {
+      "source": "Winsorisation",
+      "target": "Outlier Removal",
+      "type": "ALTERNATIVE_TO",
+      "evidence": "L'utilisation de la Winsorisation permet de borner ces valeurs à des percentiles définis, réduisant l'impact des extrêmes tout en conservant l'intégrité de l'échantillon. (Paradigmes d'Excellence en Data Science : Du Notebook de Prototypage à l'Architecture MLOps...)",
+      "strength": 0.85
+    },
+    {
+      "source": "Notebook-Driven Development (NDD)",
+      "target": "Jupytext",
+      "type": "REQUIRES",
+      "evidence": "Le NDD nécessite Jupytext pour versionner correctement les notebooks exploratoires sous Git.",
+      "strength": 0.95
+    },
+    {
+      "source": "End-to-End MLOps Pipeline",
+      "target": "MLflow",
+      "type": "REQUIRES",
+      "evidence": "Le tracking avec MLflow est au coeur des pipelines MLOps de bout en bout.",
+      "strength": 1.0
+    },
+    {
+      "source": "Data Leakage",
+      "target": "TimeSeriesSplit",
+      "type": "PREVENTED_BY",
+      "evidence": "Le split chronologique empêche l'utilisation de données futures dans le set d'entraînement, ce qui cause le data leakage.",
+      "strength": 0.9
+    },
+    {
+      "source": "Cyclical Feature Encoding",
+      "target": "SplineTransformer",
+      "type": "ALTERNATIVE_TO",
+      "evidence": "L'encodage par sinus/cosinus est une alternative mathématique simple aux splines pour les caractéristiques temporelles périodiques.",
+      "strength": 0.85
+    },
+    {
+      "source": "Marketing Mix Modeling (MMM)",
+      "target": "Caractéristiques Retardées (Lagged Features)",
+      "type": "REQUIRES",
+      "evidence": "Le MMM a besoin de features retardées pour capter l'effet persistant (adstock) des campagnes publicitaires.",
+      "strength": 0.95
+    },
+    {
+      "source": "Architecture Agentique à 3 Couches",
+      "target": "Model Context Protocol (MCP)",
+      "type": "REQUIRES",
+      "evidence": "Le MCP sert de protocole de standardisation pour la couche Outils de l'architecture à 3 couches.",
+      "strength": 0.95
+    },
+    {
+      "source": "Société d'Agents",
+      "target": "CrewAI",
+      "type": "IMPLEMENTED_BY",
+      "evidence": "CrewAI permet d'implémenter efficacement le paradigme de société d'agents avec des rôles fixes.",
+      "strength": 0.9
+    },
+    {
+      "source": "Société d'Agents",
+      "target": "LangGraph",
+      "type": "IMPLEMENTED_BY",
+      "evidence": "LangGraph permet de coordonner une société d'agents complexes via des graphes d'état persistants.",
+      "strength": 0.9
+    },
+    {
+      "source": "Agentic TCO",
+      "target": "MLflow",
+      "type": "EVALUATES",
+      "evidence": "L'évaluation du TCO nécessite le suivi des expérimentations et le déploiement versionné via MLOps.",
+      "strength": 0.85
+    }
+  ]
+}

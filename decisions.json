@@ -1,0 +1,238 @@
+{
+  "decisions": [
+    {
+      "id": "ts-model-selection",
+      "question": "Quel modèle utiliser pour la prévision de séries temporelles ?",
+      "context": "time_series",
+      "decision_tree": {
+        "root": "Caractéristiques de la série temporelle",
+        "branches": [
+          {
+            "condition": "Clean, well-understood series sans complexité majeure",
+            "action": "Utiliser des modèles statistiques classiques (ARIMA, Exponential Smoothing) comme base",
+            "evidence": "7 Steps to Mastering Time Series Analysis with Python - KDnuggets"
+          },
+          {
+            "condition": "Complex non-linearities, rich feature sets, and calendar variables",
+            "action": "Utiliser des modèles de Machine Learning basés sur les arbres (LightGBM, XGBoost)",
+            "evidence": "7 Steps to Mastering Time Series Analysis with Python - KDnuggets"
+          }
+        ]
+      }
+    },
+    {
+      "id": "agentic-framework-selection",
+      "question": "Quel framework d'agents IA open source choisir ?",
+      "context": "agentic_ai",
+      "decision_tree": {
+        "root": "Exigences du projet et infrastructure existante",
+        "branches": [
+          {
+            "condition": "Processing large document collections (internal knowledge bases, legal search, financial reports)",
+            "action": "Utiliser Haystack (orienté pipeline et RAG-natif)",
+            "evidence": "The best open source frameworks for building AI agents in 2026 - Firecrawl"
+          },
+          {
+            "condition": "Need human-in-the-loop approval steps or long-running stateful workflows",
+            "action": "Utiliser LangGraph",
+            "evidence": "The best open source frameworks for building AI agents in 2026 - Firecrawl"
+          },
+          {
+            "condition": ".NET teams with existing enterprise infrastructure / Azure",
+            "action": "Utiliser Semantic Kernel",
+            "evidence": "The best open source frameworks for building AI agents in 2026 - Firecrawl"
+          },
+          {
+            "condition": "Fastest path from zero to a working agent loop (single-agent automation scripts)",
+            "action": "Utiliser Smolagents",
+            "evidence": "The best open source frameworks for building AI agents in 2026 - Firecrawl"
+          },
+          {
+            "condition": "Team includes non-engineers who need a visual, low-code interface",
+            "action": "Utiliser Dify",
+            "evidence": "The best open source frameworks for building AI agents in 2026 - Firecrawl"
+          }
+        ]
+      }
+    },
+    {
+      "id": "autogen-vs-crewai",
+      "question": "Faut-il utiliser AutoGen, CrewAI ou Microsoft Agent Framework ?",
+      "context": "agentic_ai",
+      "decision_tree": {
+        "root": "Type de workflow et écosystème",
+        "branches": [
+          {
+            "condition": "Building structured, deterministic business workflows ou besoin d'efficacité de tokens",
+            "action": "Utiliser CrewAI",
+            "evidence": "CrewAI vs AutoGen vs Microsoft Agent Framework: 2026 Guide - Kanerika"
+          },
+          {
+            "condition": "Deploying on Azure / Microsoft 365 ecosystem ou intégration Copilot",
+            "action": "Utiliser Microsoft Agent Framework",
+            "evidence": "CrewAI vs AutoGen vs Microsoft Agent Framework: 2026 Guide - Kanerika"
+          },
+          {
+            "condition": "Starting a new project that would have used AutoGen",
+            "action": "Utiliser Microsoft Agent Framework (AutoGen Legacy est en mode maintenance depuis fév. 2026)",
+            "evidence": "CrewAI vs AutoGen vs Microsoft Agent Framework: 2026 Guide - Kanerika"
+          }
+        ]
+      }
+    },
+    {
+      "id": "supervised-ml-selection",
+      "question": "Quel algorithme d'apprentissage supervisé choisir ?",
+      "context": "machine_learning",
+      "decision_tree": {
+        "root": "Format des données, taille et besoin d'interprétabilité",
+        "branches": [
+          {
+            "condition": "Tabular data, < 100 k rows, need fast results",
+            "action": "Utiliser Random Forest ou XGBoost",
+            "evidence": "Top 10 Machine Learning Algorithms Explained - Intuition, Math, Code, and Use Cases"
+          },
+          {
+            "condition": "Need a probability + interpretability",
+            "action": "Utiliser Logistic Regression (L2/L1)",
+            "evidence": "Top 10 Machine Learning Algorithms Explained - Intuition, Math, Code, and Use Cases"
+          },
+          {
+            "condition": "High-dimensional text / sparse features",
+            "action": "Utiliser Naive Bayes ou Logistic Regression + TF-IDF",
+            "evidence": "Top 10 Machine Learning Algorithms Explained - Intuition, Math, Code, and Use Cases"
+          },
+          {
+            "condition": "Small dataset (< 5 k rows), non-linear boundary",
+            "action": "Utiliser SVM (RBF kernel)",
+            "evidence": "Top 10 Machine Learning Algorithms Explained - Intuition, Math, Code, and Use Cases"
+          },
+          {
+            "condition": "Image / audio / video",
+            "action": "Utiliser Pre-trained CNN ou ViT (fine-tune)",
+            "evidence": "Top 10 Machine Learning Algorithms Explained - Intuition, Math, Code, and Use Cases"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mlops-infrastructure",
+      "question": "Faut-il choisir des services Cloud Managés ou de l'Open-Source hébergé ?",
+      "context": "mlops",
+      "decision_tree": {
+        "root": "Ressources et maturité de l'organisation",
+        "branches": [
+          {
+            "condition": "Starting out / limited DevOps resources / need fast time to value",
+            "action": "Utiliser Managed cloud services (AWS SageMaker, Azure ML, Vertex AI)",
+            "evidence": "MLOps in Practice — Jupyter to Production ML Pipeline 2026 - EITT"
+          },
+          {
+            "condition": "Mature organization / strong platform team / need full control / avoid vendor lock-in",
+            "action": "Utiliser Self-hosted open-source (Kubeflow, MLflow sur clusters custom)",
+            "evidence": "MLOps in Practice — Jupyter to Production ML Pipeline 2026 - EITT"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mlops-kubernetes",
+      "question": "Quand faut-il utiliser Kubernetes pour le déploiement ML ?",
+      "context": "mlops",
+      "decision_tree": {
+        "root": "Volume de trafic et nombre de modèles en production",
+        "branches": [
+          {
+            "condition": "Beginning, proof of concept, low traffic",
+            "action": "Utiliser une simple VM avec Docker + FastAPI et MLflow local",
+            "evidence": "MLOps in Practice — Jupyter to Production ML Pipeline 2026 - EITT"
+          },
+          {
+            "condition": "5+ models in production / need auto-scaling / advanced strategies (A/B testing, Canary)",
+            "action": "Utiliser Kubernetes (avec KServe ou Seldon Core)",
+            "evidence": "MLOps in Practice — Jupyter to Production ML Pipeline 2026 - EITT"
+          }
+        ]
+      }
+    },
+    {
+      "id": "clustering-selection",
+      "question": "Quel algorithme de clustering utiliser ?",
+      "context": "clustering",
+      "decision_tree": {
+        "root": "Forme attendue des clusters et présence d'outliers",
+        "branches": [
+          {
+            "condition": "Clusters are expected to be spherical, of equal size, and data lacks severe outliers",
+            "action": "Utiliser K-Means",
+            "evidence": "The Ultimate Guide to Cluster Analysis — Blog | Keboola"
+          },
+          {
+            "condition": "Clusters have arbitrary/uneven shapes, or need to isolate noise/outliers",
+            "action": "Utiliser DBSCAN",
+            "evidence": "The Ultimate Guide to Cluster Analysis — Blog | Keboola"
+          }
+        ]
+      }
+    },
+    {
+      "id": "dimensionality-reduction",
+      "question": "Comment réduire la dimensionnalité (> 50 features) ?",
+      "context": "machine_learning",
+      "decision_tree": {
+        "root": "Objectif de la transformation",
+        "branches": [
+          {
+            "condition": "Besoin d'une transformation linéaire, rapide et réversible",
+            "action": "Utiliser PCA",
+            "evidence": "Top 10 Machine Learning Algorithms Explained - Intuition, Math, Code, and Use Cases"
+          },
+          {
+            "condition": "Besoin de préserver la topologie locale et globale (non-linéaire)",
+            "action": "Utiliser UMAP ou t-SNE",
+            "evidence": "Top 10 Machine Learning Algorithms Explained - Intuition, Math, Code, and Use Cases"
+          }
+        ]
+      }
+    },
+    {
+      "id": "notebook-vs-script",
+      "question": "Faut-il utiliser un Notebook Jupyter ou un Script Python ?",
+      "context": "data_engineering",
+      "decision_tree": {
+        "root": "Objectif de l'étape de développement",
+        "branches": [
+          {
+            "condition": "Exploration, EDA et prototypage interactif",
+            "action": "Jupyter Notebook"
+          }
+        ]
+      }
+    },
+    {
+      "id": "agentic-human-supervision",
+      "question": "Quel niveau d'intervention humaine est requis pour cette action de l'agent ?",
+      "context": "agentic_ai",
+      "decision_tree": {
+        "root": "Niveau de risque et de réversibilité de l'action",
+        "branches": [
+          {
+            "condition": "Action automatisée à faible risque et réversible",
+            "action": "Niveau 1 : Exécution 100% automatisée sans supervision",
+            "evidence": "Leadership in Agentic AI - Module 2 : Architecting the Agentic Enterprise"
+          },
+          {
+            "condition": "Action modérée nécessitant un contrôle qualité",
+            "action": "Niveau 2 : Supervision avec fenêtre de révision humaine (ex: validation avant de lancer un pipeline ML coûteux)",
+            "evidence": "Leadership in Agentic AI - Module 2 : Architecting the Agentic Enterprise"
+          },
+          {
+            "condition": "Action irréversible ou à forts enjeux business/sécurité",
+            "action": "Niveau 3 : Approbation humaine stricte obligatoire (ex: déploiement en production, suppression de base de données)",
+            "evidence": "Leadership in Agentic AI - Module 2 : Architecting the Agentic Enterprise"
+          }
+        ]
+      }
+    }
+  ]
+}

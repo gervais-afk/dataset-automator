@@ -1,0 +1,37 @@
+# Dependances
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Secrets et Cles API (Tres important)
+.env
+.env.*
+serviceAccountKey.json
+*key.json
+*.pem
+
+# Donnees & Artifacts volumineux
+*.csv
+*.xlsx
+*.parquet
+*.png
+*.jpg
+*.jpeg
+*.pdf
+workspace/outputs/**/*.png
+workspace/outputs/**/*.csv
+
+# Logs et Debug local
+*.log
+firebase-debug.log
+firestore-debug.log
+.firebase/
+.genkit/
+
+# IDE et OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

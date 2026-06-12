@@ -1,0 +1,21 @@
+{
+  "name": "mcp-neo4j-server",
+  "version": "1.0.0",
+  "description": "MCP Server for Neo4j Graph RAG",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.1",
+    "dotenv": "^16.4.5",
+    "neo4j-driver": "^5.27.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "typescript": "^5.7.2"
+  }
+}
