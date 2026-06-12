@@ -75,3 +75,12 @@ Chaque exécution génère un dossier contenant :
 1.  **Le Dataset Nettoyé** (`.csv`) après application de la stratégie.
 2.  **Le Rapport SHAP** (`shap_summary.png`) d'explicabilité.
 3.  **Le Notebook MLOps Final** (`.ipynb`) : Un rapport Jupyter complet structuré selon le standard CRISP-ML(Q), contenant le code de nettoyage, l'entraînement optimal (paramètres d'auto-tuning Optuna intégrés), et les évaluations MLflow.
+
+---
+
+## 👤 Auteur
+
+*   **Nom** : Gervais KOA (`gervais-afk`)
+*   **Rôle** : Ingénieur IA & LLMOps
+*   **Contact** : [koagervais85@gmail.com](mailto:koagervais85@gmail.com)
+
