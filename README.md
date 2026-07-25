@@ -1,86 +1,175 @@
-# 🌟 Dataset Automator: Platform Agentic End-to-End MLOps
+# 🌟 Dataset Automator — Sovereign Agentic MLOps Platform
 
-`Dataset Automator` est une plateforme industrielle d'**IA Agentique appliquée au MLOps (CRISP-ML(Q))**. Elle orchestre de multiples agents intelligents spécialisés pour profiler, nettoyer, optimiser, auditer et documenter n'importe quel jeu de données tabulaires de manière déterministe et sécurisée.
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
+[![Firebase Genkit](https://img.shields.io/badge/Firebase_Genkit-Agentic_Framework-FFCA28?style=for-the-badge&logo=firebase)](https://firebase.google.com/docs/genkit)
+[![Gemma 4 12B QAT](https://img.shields.io/badge/Local_LLM-Gemma_4_12B_QAT-4285F4?style=for-the-badge&logo=google)](https://ai.google.dev/gemma)
+[![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python)](https://www.python.org/)
+[![FastMCP](https://img.shields.io/badge/MCP-FastMCP-000000?style=for-the-badge)](https://modelcontextprotocol.io/)
+[![MLflow](https://img.shields.io/badge/MLOps-MLflow-0194E2?style=for-the-badge&logo=mlflow)](https://mlflow.org/)
+[![Neo4j](https://img.shields.io/badge/Neo4j-5.20-008CC1?style=for-the-badge&logo=neo4j)](https://neo4j.com/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.35-FF4B4B?style=for-the-badge&logo=streamlit)](https://streamlit.io/)
+[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](#license)
 
-Ce projet démontre comment allier la puissance de l'IA générative (LLM locaux/cloud) avec la rigueur de l'ingénierie logicielle traditionnelle (Bases de graphes Neo4j, validation Zod, Guardrails mathématiques et vision par ordinateur).
+> **Dataset Automator** est une plateforme industrielle d'**IA Agentique SOUVERAINE appliquée au MLOps (CRISP-ML(Q))**. Elle orchestre de multiples agents intelligents spécialisés pour profiler, nettoyer, optimiser, auditer et documenter n'importe quel jeu de données tabulaires de manière déterministe et sécurisée.
 
 ---
 
-## 🏛️ Architecture Globale (Cerveau & Muscles)
+## 🏛️ Architecture Globale & Modèle Découplé
 
-L'application est conçue selon un modèle de **découplage asynchrone** complet :
+`Dataset Automator` allie la puissance du raisonnement génératif (LLM locaux/cloud) avec la rigueur de l'ingénierie logicielle traditionnelle (Bases de graphes Neo4j, validation Zod, Guardrails mathématiques & vision par ordinateur) :
 
+```mermaid
+graph TD
+    Input[📄 Raw CSV / Tabular Dataset] --> Streamlit[📊 Streamlit Control Center - Port 8501]
+    Streamlit --> Firestore[(🔥 Firebase Firestore Jobs)]
+    
+    subgraph Cerveau ["🧠 TS Orchestrator (Node.js & Genkit)"]
+        Firestore --> Genkit[⚡ Firebase Genkit Flow Orchestrator]
+        Genkit --> Neo4j[(🕸️ Neo4j Graph RAG - Ontologies & Business Rules)]
+        Genkit --> Gemma[🤖 Sovereign Edge LLM - Gemma 4 12B QAT / Vision VLM]
+        Genkit --> Zod[🛡️ Zod Schema Guardrails & Self-Healing Loop]
+    end
+    
+    subgraph Muscles ["💪 Python FastMCP Workers (Calcul ML)"]
+        Zod --> FastMCP[🐍 FastMCP Server & Scikit-Learn Executing Engine]
+        FastMCP --> Drift[🕵️‍♂️ Adversarial Drift Detector - RandomForest AUC]
+        FastMCP --> Optuna[📈 Optuna Hyperparameter Optimization]
+        FastMCP --> SHAP[⚖️ SHAP Game Theory Risk Auditor]
+        FastMCP --> MLflow[(📉 MLflow Telemetry & Model Registry)]
+    end
+    
+    FastMCP --> Notebook[📄 Executable CRISP-ML(Q) Notebook & Model Card]
 ```
-                        +----------------------------+
-                        |   Orchestrateur TS (Flow)  | <---+ (Zod / State)
-                        +----------------------------+
-                                      |
-                       (Spawn asynchrone + Heartbeat)
-                                      v
-                        +----------------------------+
-                        |    Workers Python (MCP)    | <---+ (Pandas / Sklearn)
-                        +----------------------------+
+
+Pour les spécifications d'ingénierie détaillées, consultez notre document d'architecture :
+👉 **[ARCHITECTURE.md](file:///c:/Users/HP/cam_data_sov_solutions%20newversion/dataset_automator/ARCHITECTURE.md)**
+
+---
+
+## 🌟 Piliers Fonctionnels & Agents Experts
+
+### 1. 🕵️‍♂️ Agent Adversarial Validator (Détection de Drift & Leakage)
+* Séparation chronologique ou stratifiée du dataset en 80% (passé) et 20% (futur).
+* Entraînement d'un classifieur (`RandomForest`) pour distinguer le passé du futur.
+* Si le score **AUC > 0.6**, un dérive statistique (Drift) est identifiée. L'agent extrait les variables responsables et adapte le plan de nettoyage.
+
+### 2. 🧠 Graph RAG Ontologique Neo4j
+* Extraction des règles métiers et formules expertes depuis **Neo4j** (ex: *"Privilégier l'interpolation pour les séries temporelles"* ou calculs de métriques d'affaires).
+
+### 3. 🔄 Self-Healing Loop (Auto-Correction de Code & Schémas)
+* Validation stricte par schémas **Zod**. En cas d'erreur de syntaxe ou de sortie LLM hors format, l'erreur est interceptée et réinjectée avec un délai d'attente progressif (backoff exponentiel jusqu'à 3 essais).
+
+### 4. 🚦 Double Guardrail (Mathématique & Visuel VLM)
+* **Guardrail Mathématique** : Détection d'overfitting ($R^2_{\text{train}} - R^2_{\text{test}} > 0.15$) et de déséquilibre de classe.
+* **Guardrail Visuel (Chart Interpreter)** : Inspection multimodale des matrices de confusion et graphiques par le modèle de vision local.
+
+### 5. ⚖️ Agent Explainability Auditor (SHAP Game Theory Audit)
+* Attribution SHAP des variables dans la décision du modèle.
+* Détection automatique des proxys biaisés (feature pèsant >80% de la décision).
+
+---
+
+## 💻 Tech Stack Overview
+
+### 🤖 IA Agentique & Orchestration
+* **Agentic Framework** : **Firebase Genkit** (`ts-orchestrator/src/`)
+* **Sovereign Local LLM** : **Google Gemma 4 (12B QAT)** via LM Studio API
+* **Graph RAG Database** : **Neo4j 5.20** (`bolt://127.0.0.1:7687`)
+
+### 🐍 Workers Python & Calcul ML
+* **Moteur FastMCP** : Python 3.11, FastMCP, Pandas, Scikit-Learn, CatBoost, Optuna, SHAP.
+* **MLOps & Tracking** : **MLflow** (`mlflow.db` SQLite & Model Registry).
+* **Interface Utilisateur** : **Streamlit** Control Center (`py-executors/src/app_dashboard.py`).
+
+---
+
+## 📂 Structure du Projet
+
+```ascii
+dataset_automator/
+├── ARCHITECTURE.md                  # 🏛️ Spécifications d'architecture détaillée
+├── README.md                        # 📖 Documentation principale du projet
+├── instructions_lancement.md        # 🚀 Guide rapide de démarrage
+├── launch_all.bat                   # ⚡ Lanceur automatisé 1-clic des 5 services
+├── roadmap.md                       # 🗺️ Feuille de route technique Gemma 4
+├── roadmap_futur.md                 # 🔮 Évolutions futures & production
+├── .env.example                     # 🔑 Modèle de variables d'environnement
+├── LICENSE                          # ⚖️ Licence MIT
+│
+├── ts-orchestrator/                 # 🧠 Le Cerveau (Genkit & TypeScript)
+│   ├── src/
+│   │   ├── index.ts                 # Point d'entrée de l'Orchestrateur
+│   │   ├── agents/                  # Générateurs de stratégies
+│   │   ├── rag/                     # Client Graph RAG Neo4j & OKF Reader
+│   │   ├── guardrails/              # Validation Zod & Self-Healing
+│   │   └── vision/                  # Interpretation visuelle VLM
+│   └── scripts/                     # Outils d'injection de connaissances Cypher
+│
+├── py-executors/                    # 💪 Les Muscles (FastMCP Python)
+│   ├── src/
+│   │   ├── server.py                # FastMCP Server & Outils ML
+│   │   ├── app_dashboard.py         # Dashboard Streamlit métier
+│   │   ├── notebook_factory.py      # Générateur de Notebooks CRISP-ML(Q)
+│   │   └── tools/                   # Drift, Data Contracts, SHAP, REPL Sandbox
+│   └── templates/notebook_steps/    # 15+ Templates de code ML (TimeSeries, NLP, etc.)
+│
+├── scripts/neo4j/                   # 🕸️ Scripts Cypher d'ontologie & règles
+├── knowledge_base/                  # 📚 Base documentaire par domaine ML
+└── workspace/                       # 📄 Dossier de sortie des artefacts & MLflow
 ```
 
-*   **Le Cerveau (TS Orchestrator)** : Écrit en **TypeScript (Node.js)** avec **Google Genkit**. Il gère la logique de flux (Flows), maintient l'état, interroge le graphe de connaissances Neo4j, gère la gouvernance humaine (Human-in-the-Loop) et contrôle les cycles d'auto-correction (Self-Healing).
-*   **Les Muscles (Python Workers)** : Un serveur **FastMCP** en **Python** qui exécute les tâches lourdes de science des données (Pandas, Scikit-Learn, Optuna, MLflow, CrewAI) et expose des outils à l'orchestrateur.
+---
+
+## 🚀 Quickstart & Guide d'Installation Rapide
+
+### Prérequis
+* **Node.js** >= 18.x
+* **Python** >= 3.11 & **uv** package manager
+* **Docker Desktop** (pour le conteneur Neo4j)
+* **LM Studio** (pour le modèle local **Google Gemma 4 12B QAT**)
+
+### 1. Cloner le Dépôt
+```bash
+git clone https://github.com/gervais-afk/dataset-automator.git
+cd dataset-automator
+```
+
+### 2. Configurer les Variables d'Environnement
+```bash
+cp .env.example .env
+```
+
+### 3. Lancer en 1 Clic (Recommandé)
+Double-cliquez sur **`launch_all.bat`** à la racine du dépôt.
+
+Ou via PowerShell :
+```powershell
+.\launch_all.bat
+```
 
 ---
 
-## 🚀 Fonctionnalités & Agents Experts
+## 🌐 Interfaces & Ports Locaux
 
-### 1. 🕵️‍♂️ Agent Adversarial Validator (Détection de Drift)
-Avant d'établir une stratégie, cet agent cherche à détecter du **Data Drift** (dérive statistique) ou du **Target Leakage** :
-*   Il sépare chronologiquement le dataset en 80% (passé) et 20% (futur).
-*   Il entraîne un classifieur (`RandomForest`) pour distinguer le passé du futur.
-*   Si le modèle y parvient avec un score **AUC > 0.6**, un drift est identifié. L'agent extrait les 5 caractéristiques responsables de la dérive et les injecte dans le contexte du LLM Stratège pour adapter la stratégie de nettoyage.
-
-### 2. 🧠 Stratégie Assistée par Graph RAG (Neo4j)
-L'orchestrateur extrait les concepts théoriques et les règles expertes métiers depuis une base de graphe **Neo4j** (ex: *"Dans une série temporelle, privilégier l'imputation par interpolation ou médiane plutôt que la moyenne"*). Ces règles alimentent le prompt du LLM.
-
-### 🔄 Boucle de "Self-Healing" (Auto-Correction)
-Les LLM locaux peuvent parfois échouer à formater leurs sorties. L'orchestrateur utilise des schémas **Zod** stricts. Si l'IA renvoie un schéma invalide :
-*   L'erreur Zod est interceptée.
-*   Elle est réinjectée dans le prompt du LLM comme feedback correctif.
-*   L'orchestrateur réessaie (jusqu'à 3 fois) avec un délai d'attente progressif (backoff exponentiel).
-
-### 3. 🚦 Double Guardrail (Mathématique & Visuel)
-*   **Guardrail Mathématique** : Vérification des métriques de performance du modèle (sur-apprentissage/overfitting, recall nul sur des classes majoritaires).
-*   **Guardrail Visuel (Chart Interpreter)** : L'image de la matrice de confusion ou des résidus est analysée par un agent de vision (VLM) pour détecter visuellement des anomalies graphiques (ex: effondrement de classe) que les chiffres n'auraient pas détectées.
-
-### 4. ⚖️ Agent Explainability Auditor (SHAP Audit)
-Avant la livraison du modèle, cet agent calcule les valeurs **SHAP** (teinte de la théorie des jeux coopératifs) pour :
-*   Profiler l'attribution des variables dans la décision du modèle.
-*   Calculer un **Score de Risque** (si une feature pèse >80% à elle seule, alerte de fuite de données ou de proxy biaisé).
-*   Générer un graphique d'importance globale (`shap_summary.png`) et pousser les métriques brutes sur **Firestore**.
-
-### 5. 🛡️ Heartbeat & Résilience Python
-Pour éviter qu'un script Python ne gèle le serveur TS (ex: saturation RAM pendant Optuna) :
-*   Un thread d'arrière-plan envoie un signal de vie (heartbeat) toutes les 10 secondes dans **Firestore**.
-*   L'orchestrateur TypeScript monitore ce signal de manière non bloquante et applique un **SIGKILL** si le worker ne répond plus pendant 60 secondes, libérant proprement les ressources système.
+| Service | Endpoint | Description |
+| :--- | :--- | :--- |
+| **Streamlit Control Center** | [http://localhost:8501](http://localhost:8501) | Dashboard Web Utilisateur |
+| **MLflow UI** | [http://localhost:5000](http://localhost:5000) | Tracking d'expériences & Modèles |
+| **Genkit Developer UI** | [http://localhost:4000](http://localhost:4000) | Observabilité & Traces des Agents |
+| **Neo4j Web Browser** | [http://localhost:7474](http://localhost:7474) | Visualisation du Graph RAG |
+| **LM Studio Local API** | [http://localhost:1234](http://localhost:1234) | Endpoint Souverain Gemma 4 12B QAT |
 
 ---
 
-## 🛠️ Stack Technique
+## 👤 Auteur & Contact
 
-*   **Backend TS** : Node.js, Google Genkit, TypeScript, Zod, Pino (logging).
-*   **Calcul ML** : Python, Pandas, Scikit-Learn, SHAP, Optuna, CrewAI, Matplotlib, Seaborn.
-*   **Bases de Données** : Neo4j (Graph RAG), Firebase Local Emulator (Firestore & Cloud Storage pour le découplage asynchrone).
-
----
-
-## 📋 Livrables du Pipeline
-
-Chaque exécution génère un dossier contenant :
-1.  **Le Dataset Nettoyé** (`.csv`) après application de la stratégie.
-2.  **Le Rapport SHAP** (`shap_summary.png`) d'explicabilité.
-3.  **Le Notebook MLOps Final** (`.ipynb`) : Un rapport Jupyter complet structuré selon le standard CRISP-ML(Q), contenant le code de nettoyage, l'entraînement optimal (paramètres d'auto-tuning Optuna intégrés), et les évaluations MLflow.
+* **Nom** : Gervais KOA (`gervais-afk`)
+* **Rôle** : Ingénieur IA & LLMOps
+* **Contact** : [koagervais85@gmail.com](mailto:koagervais85@gmail.com)
+* **GitHub** : [https://github.com/gervais-afk](https://github.com/gervais-afk)
 
 ---
 
-## 👤 Auteur
+## ⚖️ Licence
 
-*   **Nom** : Gervais KOA (`gervais-afk`)
-*   **Rôle** : Ingénieur IA & LLMOps
-*   **Contact** : [koagervais85@gmail.com](mailto:koagervais85@gmail.com)
-
+Ce projet est sous licence [MIT](LICENSE).

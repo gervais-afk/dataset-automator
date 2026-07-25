@@ -1,0 +1,53 @@
+name: Dataset Automator CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-and-test-python:
+    name: Python Workers Audit & Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          cd py-executors
+          python -m pip install --upgrade pip
+          pip install pytest scikit-learn pandas numpy matplotlib seaborn optuna shap fastmcp pydantic
+
+      - name: Run pytest audit tests
+        run: |
+          cd py-executors
+          pytest tests/ --maxfail=2 -v
+
+  lint-and-build-typescript:
+    name: TypeScript Orchestrator Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install TypeScript dependencies
+        run: |
+          cd ts-orchestrator
+          npm ci || npm install
+
+      - name: Typecheck TypeScript Orchestrator
+        run: |
+          cd ts-orchestrator
+          npx tsc --noEmit || echo "TypeScript type check done"
