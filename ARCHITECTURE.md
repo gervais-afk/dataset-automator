@@ -27,7 +27,7 @@ graph TD
         PyWorker -->|10. Telemetry & Tracking| MLflow[(📉 MLflow Model Registry & SQLite)]
     end
     
-    PyWorker -->|11. Final Artifacts & IPYNB| Artifacts[📄 Notebook CRISP-ML(Q) + Model Cards]
+    PyWorker -->|11. Final Artifacts & IPYNB| Artifacts["📄 Notebook CRISP-ML(Q) + Model Cards"]
     Artifacts -->|12. Status Update| User
 ```
 

@@ -38,7 +38,7 @@ graph TD
         FastMCP --> MLflow[(📉 MLflow Telemetry & Model Registry)]
     end
     
-    FastMCP --> Notebook[📄 Executable CRISP-ML(Q) Notebook & Model Card]
+    FastMCP --> Notebook["📄 Executable CRISP-ML(Q) Notebook & Model Card"]
 ```
 
 Pour les spécifications d'ingénierie détaillées, consultez notre document d'architecture :
