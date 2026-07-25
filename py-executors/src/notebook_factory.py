@@ -21,7 +21,7 @@ except ImportError:
     class DataProfile: pass
     def build_data_profile(df, filename): return DataProfile()
 
-_STEPS_DIR = Path("templates/notebook_steps")
+_STEPS_DIR = Path(__file__).resolve().parent.parent / "templates" / "notebook_steps"
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -47,28 +47,55 @@ def _substitute_vars(content: str, variables: dict) -> str:
     return result
 
 
-def _get_base64_eval_plot(nom_base: str) -> str:
-    """Recherche le dernier graphique généré dans les dossiers d'artifacts et le retourne encodé en Base64."""
+def _get_base64_eval_plot(nom_base: str, file_path: str = None) -> str:
+    """Recherche le graphique d'évaluation spécifique au dataset et le retourne encodé en Base64."""
     import base64
     import glob
     import os
     from pathlib import Path
     
+    all_files = []
+    
+    # 1. Recherche dans le dossier parent du fichier de données (cas le plus précis)
+    if file_path:
+        parent_dir = Path(file_path).parent
+        for pattern in [parent_dir / "*.png", parent_dir / "models" / "*.png", parent_dir / "models_artifacts" / "*.png"]:
+            matches = glob.glob(str(pattern))
+            for m in matches:
+                filename = Path(m).name.lower()
+                if any(k in filename for k in ["cm_", "residuals_", "evaluation", "plot", "confusion"]):
+                    all_files.append(m)
+                    
+    # 2. Recherche dans les dossiers outputs standard avec le nom de base ou le nom du parent
+    parent_name = Path(file_path).parent.name if file_path else nom_base
     paths = [
-        Path("outputs") / nom_base / "*.png",
-        Path("outputs") / nom_base / "models" / "*.png",
-        Path("workspace/models_artifacts/*.png"),
-        Path("dataset_automator/workspace/models_artifacts/*.png"),
-        Path("../workspace/models_artifacts/*.png"),
-        Path("../../dataset_automator/workspace/models_artifacts/*.png"),
+        Path("outputs") / parent_name / "*.png",
+        Path("outputs") / parent_name / "models" / "*.png",
+        Path("workspace/outputs") / parent_name / "*.png",
+        Path("dataset_automator/workspace/outputs") / parent_name / "*.png",
     ]
     
-    all_files = []
     for pattern in paths:
         matches = glob.glob(str(pattern))
         for m in matches:
             filename = Path(m).name.lower()
             if any(k in filename for k in ["cm_", "residuals_", "evaluation", "plot", "confusion"]):
+                all_files.append(m)
+                
+    # 3. Recherche dans les dossiers d'artifacts globaux, mais UNIQUEMENT si le nom du fichier contient le nom du dataset
+    global_paths = [
+        Path("workspace/models_artifacts/*.png"),
+        Path("dataset_automator/workspace/models_artifacts/*.png"),
+        Path("../workspace/models_artifacts/*.png"),
+        Path("../../dataset_automator/workspace/models_artifacts/*.png"),
+    ]
+    for pattern in global_paths:
+        matches = glob.glob(str(pattern))
+        for m in matches:
+            filename = Path(m).name.lower()
+            # On filtre pour s'assurer que c'est bien lié au dataset actuel
+            if (parent_name.lower() in filename or nom_base.lower() in filename) and \
+               any(k in filename for k in ["cm_", "residuals_", "evaluation", "plot", "confusion"]):
                 all_files.append(m)
                 
     if not all_files:
@@ -83,6 +110,7 @@ def _get_base64_eval_plot(nom_base: str) -> str:
         return f"*Erreur lors de l'intégration de l'image d'évaluation : {e}*"
 
 
+
 def _build_variables(
     file_path      : str,
     target_col     : str,
@@ -91,6 +119,9 @@ def _build_variables(
     type_tache     : str,
     algo_clustering: str,
     date_col       : str = "",
+    llm_interpretation: str = "",
+    business_costs: dict = None,
+    data_contract_assertions: str = "",
 ) -> dict:
     """
     Construit la table de substitution complète.
@@ -121,8 +152,24 @@ def _build_variables(
         "classification": "classification",
         "regression"    : "regression",
         "timeseries"    : "timeseries",
+        "anomaly_detection"     : "anomaly_detection",
+        "survival_analysis"     : "survival_analysis",
+        "recommender_system"    : "recommender_system",
+        "causal_inference"      : "causal_inference",
+        "association_rules"     : "association_rules",
+        "ab_testing"            : "ab_testing",
+        "semi_supervised"       : "semi_supervised",
+        "optimization"          : "optimization",
+        "graph_analysis"        : "graph_analysis",
+        "reinforcement_learning": "reinforcement_learning",
+        "nlp"                   : "nlp",
+        "computer_vision"       : "computer_vision",
     }
     type_tache_norm = _TACHE_MAP.get(type_tache.lower(), type_tache)
+
+    # Valeur par défaut si non spécifiée
+    interp_val = llm_interpretation if llm_interpretation else "*Aucune interprétation qualitative de l'Agent IA disponible pour cette exécution.*"
+    assertions_val = data_contract_assertions if data_contract_assertions else "# Aucun contrat de données sémantique spécifié pour ce dataset."
 
     return {
         "FILE_PATH"      : file_path_abs,
@@ -146,7 +193,10 @@ def _build_variables(
         "NUM_COLS_LIST"  : str(summary.get("colonnes_numeriques",    [])),
         "CAT_COLS_LIST"  : str(summary.get("colonnes_categorielles", [])),
         "NEEDS_DIFF"     : "{NEEDS_DIFF}",
-        "EVAL_PLOT"      : _get_base64_eval_plot(nom_base),
+        "EVAL_PLOT"      : _get_base64_eval_plot(nom_base, file_path),
+        "LLM_INTERPRETATION": interp_val,
+        "DATA_CONTRACT_ASSERTIONS": assertions_val,
+        "USE_PCA"        : str(summary.get("use_pca", False)),
     }
 
 
@@ -170,29 +220,63 @@ def _get_steps_universal(
     """
     Sélectionne les steps selon le profil complet du dataset (Phase 2).
     """
-    # ── Routing par type de tâche ─────────────────────────────────
-    if getattr(profile, "is_timeseries", False):
-        slots = [
-            ("00_setup_timeseries.md",         "00_setup_et_split.md"),
-            ("01_analyse_exploratoire_eda.md",  "01_analyse_exploratoire_eda.md"),
-            ("02_feature_engineering.md",       "02_preprocessing_pipelines.md"),
-            ("03_timeseries_models.md",         "03_benchmarking_modeles.md"),
-            ("03b_advanced_training.md",        "03_benchmarking_modeles.md"),
-            ("04_evaluation_timeseries.md",     "04_evaluation_finale.md"),
-            ("05_mlops_monitoring.md",          "05_mlops_monitoring.md"),
-            ("06_rapport_narratif.md",          "06_rapport_narratif.md"),
-        ]
+    task = getattr(profile, "task_type", "").lower()
+    is_finance = getattr(profile, "domaine", "").lower() == "finance"
 
-    elif getattr(profile, "task_type", "") == "clustering":
+    # ── Routing par type de tâche ─────────────────────────────────
+    if getattr(profile, "is_timeseries", False) or task == "timeseries":
+        if is_finance:
+            slots = [
+                ("00_setup_timeseries.md",         "00_setup_et_split.md"),
+                ("01_analyse_exploratoire_eda.md",  "01_analyse_exploratoire_eda.md"),
+                ("02_feature_engineering.md",       "02_preprocessing_pipelines.md"),
+                ("03_sarima_forecasting.md",        "03_benchmarking_modeles.md"),
+                ("03b_advanced_training.md",        "03_benchmarking_modeles.md"),
+                ("04_portfolio_risk_evaluation.md", "04_evaluation_finale.md"),
+                ("05_mlops_monitoring.md",          "05_mlops_monitoring.md"),
+                ("06_rapport_narratif.md",          "06_rapport_narratif.md"),
+                ("07_deploy_finance_agent.md",      "07_deploy_api.md"),
+            ]
+        else:
+            slots = [
+                ("00_setup_timeseries.md",         "00_setup_et_split.md"),
+                ("01_analyse_exploratoire_eda.md",  "01_analyse_exploratoire_eda.md"),
+                ("02_feature_engineering.md",       "02_preprocessing_pipelines.md"),
+                ("03_timeseries_models.md",         "03_benchmarking_modeles.md"),
+                ("03b_advanced_training.md",        "03_benchmarking_modeles.md"),
+                ("04_evaluation_timeseries.md",     "04_evaluation_finale.md"),
+                ("05_mlops_monitoring.md",          "05_mlops_monitoring.md"),
+                ("06_rapport_narratif.md",          "06_rapport_narratif.md"),
+                ("07_deploy_api.md",                "07_deploy_api.md"),
+            ]
+
+    elif task in ["clustering", "unsupervised"]:
         slots = [
             ("00_setup_et_split.md",              "00_setup_et_split.md"),
             ("01_analyse_exploratoire_eda.md",    "01_analyse_exploratoire_eda.md"),
             ("02_preprocessing_clustering.md",    "02_preprocessing_pipelines.md"),
             ("03_clustering_benchmark.md",        "03_benchmarking_modeles.md"),
-            ("03b_advanced_training.md",          "03_benchmarking_modeles.md"),
             ("04_evaluation_clustering.md",       "04_evaluation_finale.md"),
             ("05_mlops_monitoring.md",            "05_mlops_monitoring.md"),
             ("06_rapport_narratif.md",            "06_rapport_narratif.md"),
+            ("07_deploy_api.md",                  "07_deploy_api.md"),
+        ]
+
+    elif task in [
+        "anomaly_detection", "survival_analysis", "recommender_system",
+        "causal_inference", "association_rules", "ab_testing",
+        "semi_supervised", "optimization", "graph_analysis",
+        "reinforcement_learning", "nlp", "computer_vision"
+    ]:
+        template_name = f"03_{task}.md"
+        slots = [
+            ("00_setup_et_split.md",              "00_setup_et_split.md"),
+            ("01_analyse_exploratoire_eda.md",    "01_analyse_exploratoire_eda.md"),
+            ("02_preprocessing_pipelines.md",     "02_preprocessing_pipelines.md"),
+            (template_name,                       "03_benchmarking_modeles.md"),
+            ("05_mlops_monitoring.md",            "05_mlops_monitoring.md"),
+            ("06_rapport_narratif.md",            "06_rapport_narratif.md"),
+            ("07_deploy_api.md",                  "07_deploy_api.md"),
         ]
 
     elif getattr(profile, "is_imbalanced", False):
@@ -204,8 +288,10 @@ def _get_steps_universal(
             ("03_benchmarking_modeles.md",        "03_benchmarking_modeles.md"),
             ("03b_advanced_training.md",          "03_benchmarking_modeles.md"),
             ("04_evaluation_finale.md",           "04_evaluation_finale.md"),
+            ("05_local_explainability.md",        "04_evaluation_finale.md"),
             ("05_mlops_monitoring.md",            "05_mlops_monitoring.md"),
             ("06_rapport_narratif.md",            "06_rapport_narratif.md"),
+            ("07_deploy_api.md",                  "07_deploy_api.md"),
         ]
 
     else:   # regression + classification équilibrée
@@ -216,8 +302,10 @@ def _get_steps_universal(
             ("03_benchmarking_modeles.md",        "03_benchmarking_modeles.md"),
             ("03b_advanced_training.md",          "03_benchmarking_modeles.md"),
             ("04_evaluation_finale.md",           "04_evaluation_finale.md"),
+            ("05_local_explainability.md",        "04_evaluation_finale.md"),
             ("05_mlops_monitoring.md",            "05_mlops_monitoring.md"),
             ("06_rapport_narratif.md",            "06_rapport_narratif.md"),
+            ("07_deploy_api.md",                  "07_deploy_api.md"),
         ]
 
     # ── Résolution ────────────────────────────────────────────────
@@ -247,12 +335,15 @@ def assemble_notebook_from_steps(
     is_clustering  : bool = False,
     algo_clustering: str  = "benchmark",
     steps_filter   : Optional[list] = None,
+    llm_interpretation: str = "",
+    business_costs: dict = None,
+    data_contract_assertions: str = "",
 ) -> tuple:
     """Assemble un notebook avec routing intelligent (Phase 2)."""
     
     tache_ml = summary.get("tache_ml", "REGRESSION")
     date_col = summary.get("date_col", "")
-
+ 
     # ── PRIORITÉ DES TÂCHES ───────────────────────────────────────
     # On respecte le choix explicite de l'utilisateur (is_clustering) 
     # même si des dates sont présentes.
@@ -262,12 +353,12 @@ def assemble_notebook_from_steps(
         or tache_ml.upper() == "TIMESERIES"
         or bool(date_col)
     )
-
+ 
     # Le clustering est effectif si demandé, SAUF si c'est explicitement une TS pure (BTC etc.)
     # sans signal de segmentation.
     is_clustering_effective = is_clustering
     is_ts = is_ts_detected and not is_clustering_effective
-
+ 
     # type_tache pour l'affichage et les templates
     if is_ts:
         type_tache = "timeseries"
@@ -275,7 +366,7 @@ def assemble_notebook_from_steps(
         type_tache = "unsupervised"
     else:
         type_tache = tache_ml.lower()
-
+ 
     # ── Table de substitution ─────────────────────────────────────
     variables = _build_variables(
         file_path       = file_path,
@@ -285,6 +376,9 @@ def assemble_notebook_from_steps(
         type_tache      = type_tache,
         algo_clustering = algo_clustering,
         date_col        = date_col,
+        llm_interpretation = llm_interpretation,
+        business_costs  = business_costs,
+        data_contract_assertions = data_contract_assertions,
     )
     # ── Sélection steps : TOUJOURS les templates riches ────────────
     # Les IDs PageIndex de l'agent (1.0, 2.0, etc.) pointent vers
@@ -295,7 +389,8 @@ def assemble_notebook_from_steps(
     profile = SimpleNamespace(
         is_timeseries=is_ts,
         task_type="clustering" if is_clustering_effective else tache_ml.lower(),
-        is_imbalanced=summary.get("is_imbalanced", False)
+        is_imbalanced=summary.get("is_imbalanced", False),
+        domaine=summary.get("domaine", "general")
     )
     steps = _get_steps_universal(profile, None)
 
@@ -311,10 +406,33 @@ def assemble_notebook_from_steps(
         "language_info": {"name": "python", "version": "3.10"},
     })
 
+    # ── Cellule 0 : Header CRISP-ML(Q) Domain-Specific ──
+    total_cells = 0
+    try:
+        from domain_knowledge import get_business_header
+        domain_str = summary.get("domaine", "general")
+        # Charger le DataFrame localement pour le calcul d'impact dynamique
+        try:
+            df_local = pd.read_csv(file_path)
+        except Exception:
+            df_local = None
+            
+        header_md = get_business_header(
+            domain=domain_str,
+            task_type=type_tache,
+            dataset_name=nom_base,
+            target_col=target_col,
+            business_costs=business_costs,
+            df=df_local
+        )
+        nb.cells.append(nbformat.v4.new_markdown_cell(header_md))
+        total_cells += 1
+    except Exception as e:
+        print(f"   ⚠️ Impossible d'injecter le header métier : {e}", file=sys.stderr)
+
     print(f"\n   📚 {len(steps)} step(s) à assembler :", file=sys.stderr)
     print(f"   🔧 TYPE_TACHE={type_tache} | DATE_COL={date_col or 'Aucune'}", file=sys.stderr)
     
-    total_cells = 0
     for step_item in steps:
         step_name = ""
         raw_content = ""
@@ -428,7 +546,6 @@ def _get_clustering_steps(steps_filter: Optional[list]) -> list[str]:
         ("01_analyse_exploratoire_eda.md",    "01_analyse_exploratoire_eda.md"),
         ("02_preprocessing_clustering.md",    "02_preprocessing_pipelines.md"),
         ("03_clustering_benchmark.md",        "03_benchmarking_modeles.md"),
-        ("03b_advanced_training.md",          "03_benchmarking_modeles.md"),
         ("04_evaluation_clustering.md",       "04_evaluation_finale.md"),
         ("05_mlops_monitoring.md",            "05_mlops_monitoring.md"),
         ("06_rapport_narratif.md",            "06_rapport_narratif.md"),
@@ -513,7 +630,11 @@ def _parse_md_to_cells(content: str) -> list:
         md_text = content[pos:match.start()].strip()
         if md_text: cells.append(nbformat.v4.new_markdown_cell(md_text))
         code = match.group(1).rstrip()
-        if code: cells.append(nbformat.v4.new_code_cell(code))
+        if code:
+            cell = nbformat.v4.new_code_cell(code)
+            if "FILE_PATH" in code and "TARGET_COL" in code:
+                cell.metadata['tags'] = ['parameters']
+            cells.append(cell)
         pos = match.end()
     trailing = content[pos:].strip()
     if trailing: cells.append(nbformat.v4.new_markdown_cell(trailing))

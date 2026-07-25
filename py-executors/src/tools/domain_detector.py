@@ -57,7 +57,7 @@ class DataProfile:
 _DOMAIN_SIGNATURES = {
     "medical": {
         "columns" : [
-            "diagnosis", "disease", "patient", "age", "bmi",
+            "diagnosis", "disease", "patient", "bmi",
             "glucose", "insulin", "blood", "pressure", "cancer",
             "tumor", "malignant", "benign", "obesity", "diabetes",
             "cholesterol", "hemoglobin", "weight", "height",
@@ -70,24 +70,26 @@ _DOMAIN_SIGNATURES = {
             "price", "open", "close", "high", "low", "volume",
             "return", "yield", "revenue", "profit", "loss",
             "btc", "stock", "crypto", "asset", "portfolio",
+            "loan", "credit", "default", "fraud", "card", "transaction",
+            "deposit", "interest"
         ],
         "filename": ["btc", "stock", "finance", "crypto",
-                     "asset", "trading", "forex"],
+                     "asset", "trading", "forex", "bank", "credit", "loan", "fraud"],
     },
     "ecommerce": {
         "columns" : [
             "sales", "revenue", "order", "customer", "product",
             "category", "quantity", "discount", "shipping",
-            "rating", "review", "cart", "transaction",
+            "rating", "review", "cart", "transaction", "client",
         ],
         "filename": ["ecommerce", "sales", "shop", "retail",
-                     "commerce", "amazon"],
+                     "commerce", "amazon", "client", "business"],
     },
     "hr": {
         "columns" : [
             "employee", "salary", "department", "position",
             "attrition", "performance", "hire", "tenure",
-            "gender", "education", "satisfaction",
+            "gender", "education", "satisfaction", "age",
         ],
         "filename": ["hr", "employee", "attrition", "workforce",
                      "human_resources"],
@@ -101,6 +103,34 @@ _DOMAIN_SIGNATURES = {
         "filename": ["weather", "climate", "environment",
                      "energy", "pollution"],
     },
+    "telecom": {
+        "columns": [
+            "churn", "conso_data_go", "moyen_paiement", "anciennete_mois", 
+            "region", "client_id", "abonnement", "call", "sms", "internet", "momo"
+        ],
+        "filename": ["telecom", "telco", "churn"]
+    },
+    "real_estate": {
+        "columns": [
+            "rooms", "bedrooms", "bathrooms", "sqft", "area", 
+            "neighborhood", "house", "property", "garage", "tax", "lot"
+        ],
+        "filename": ["housing", "house", "real_estate", "property", "ames", "boston"]
+    },
+    "transport": {
+        "columns": [
+            "fare", "passenger", "vehicle", "car", "trip", "distance", 
+            "pickup", "dropoff", "driver", "mileage", "engine", "freight", "ticket"
+        ],
+        "filename": ["taxi", "uber", "trip", "car", "vehicle", "titanic", "transport", "logistics"]
+    },
+    "education": {
+        "columns": [
+            "student", "school", "grade", "score", "course", "class", 
+            "university", "exam", "gpa", "attendance", "study"
+        ],
+        "filename": ["student", "education", "school", "academic", "university", "grades"]
+    }
 }
 
 
@@ -118,8 +148,12 @@ def detect_domain(
     for domain, sigs in _DOMAIN_SIGNATURES.items():
         # Score colonnes
         for col in cols_lower:
-            if any(sig in col for sig in sigs["columns"]):
-                scores[domain] += 2
+            for sig in sigs["columns"]:
+                if sig in col:
+                    # Éviter de classifier en 'education' juste à cause d'une colonne cible ML 'target_class' ou 'pred_class'
+                    if sig == "class" and ("target" in col or "pred" in col or "label" in col):
+                        continue
+                    scores[domain] += 2
 
         # Score nom de fichier (plus fiable)
         if any(sig in file_lower for sig in sigs["filename"]):
@@ -224,29 +258,42 @@ def _detect_task(df: pd.DataFrame, profile: DataProfile) -> DataProfile:
         profile.target_col = col_num[-1] if col_num else ""
         return profile
 
-    # ── Priorité 2 : Cible catégorielle ──────────────────────────
-    # On cherche souvent la dernière colonne pour la cible
-    for col in reversed(col_cat):
-        n_unique = df[col].nunique()
-        # Une cible ne doit pas être un ID (trop de valeurs uniques)
-        if 2 <= n_unique <= 20 and (n_unique / len(df) < 0.5):
-            profile.task_type   = "classification"
-            profile.target_col  = col
-            profile.target_type = "binary" if n_unique == 2 else "multiclass"
-            profile.n_classes   = n_unique
-            if n_unique == 2:
-                profile.is_imbalanced = detect_imbalance(df[col])
-            return profile
+    # ── Priorité 2 : Recherche de cible explicite par mots-clés ──
+    # Détection forte par nom (ex: "churn", "target", "label")
+    target_kws = ["churn", "target", "label", "class", "status"]
+    for col in reversed(df.columns):
+        if any(kw in col.lower() for kw in target_kws):
+            n_unique = df[col].nunique()
+            if 2 <= n_unique <= 20 and (n_unique / len(df) < 0.5):
+                profile.task_type   = "classification"
+                profile.target_col  = col
+                profile.target_type = "binary" if n_unique == 2 else "multiclass"
+                profile.n_classes   = n_unique
+                if n_unique == 2:
+                    profile.is_imbalanced = detect_imbalance(df[col])
+                return profile
+            elif np.issubdtype(df[col].dtype, np.number):
+                profile.task_type   = "regression"
+                profile.target_col  = col
+                profile.target_type = "continuous"
+                return profile
 
-    # ── Priorité 3 : Numérique à faible cardinalité ───────────────
-    for col in reversed(col_num):
+    # ── Priorité 3 : Recherche par position (Dernières colonnes) ──
+    # On parcourt les colonnes de droite à gauche, en respectant l'ordre réel
+    for col in reversed(df.columns):
         n_unique = df[col].nunique()
-        if 2 <= n_unique <= 10 and (n_unique / len(df) < 0.05):
-            profile.task_type   = "classification"
-            profile.target_col  = col
-            profile.target_type = "binary" if n_unique == 2 else "multiclass"
-            profile.n_classes   = n_unique
-            return profile
+        if 2 <= n_unique <= 20 and (n_unique / len(df) < 0.5):
+            is_cat = (df[col].dtype == object or df[col].dtype.name == 'category' or df[col].dtype == bool)
+            is_valid_num = np.issubdtype(df[col].dtype, np.number) and n_unique <= 10 and (n_unique / len(df) < 0.05)
+            
+            if is_cat or is_valid_num:
+                profile.task_type   = "classification"
+                profile.target_col  = col
+                profile.target_type = "binary" if n_unique == 2 else "multiclass"
+                profile.n_classes   = n_unique
+                if n_unique == 2:
+                    profile.is_imbalanced = detect_imbalance(df[col])
+                return profile
 
     # ── Priorité 4 : Régression ───────────────────────────────────
     if col_num:

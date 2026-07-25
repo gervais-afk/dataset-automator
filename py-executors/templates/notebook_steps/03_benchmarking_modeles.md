@@ -27,6 +27,16 @@ if TYPE_TACHE == "classification":
         "XGBoost"           : XGBClassifier(n_estimators=100, learning_rate=0.1, random_state=42),
         "LightGBM"          : LGBMClassifier(n_estimators=100, verbose=-1, random_state=42),
     }
+    try:
+        from catboost import CatBoostClassifier
+        MODELES["CatBoost"] = CatBoostClassifier(iterations=100, verbose=0, random_state=42)
+    except ImportError:
+        pass
+    try:
+        from tabicl import TabICLClassifier
+        MODELES["TabICL (SOTA)"] = TabICLClassifier()
+    except ImportError:
+        pass
     cv = RepeatedStratifiedKFold(n_splits=5, n_repeats=2, random_state=42)
     metric = "accuracy"
 
@@ -42,7 +52,18 @@ elif TYPE_TACHE == "regression":
         "Lasso (FeatureSel)": Lasso(alpha=0.1),
         "RandomForest"      : RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42),
         "XGBoost"           : XGBRegressor(n_estimators=100, learning_rate=0.1, random_state=42),
+        "LightGBM"          : LGBMRegressor(n_estimators=100, verbose=-1, random_state=42),
     }
+    try:
+        from catboost import CatBoostRegressor
+        MODELES["CatBoost"] = CatBoostRegressor(iterations=100, verbose=0, random_state=42)
+    except ImportError:
+        pass
+    try:
+        from tabicl import TabICLRegressor
+        MODELES["TabICL (SOTA)"] = TabICLRegressor()
+    except ImportError:
+        pass
     cv = RepeatedKFold(n_splits=5, n_repeats=2, random_state=42)
     metric = "r2"
 
@@ -83,12 +104,22 @@ for name, model in MODELES.items():
     t0 = time.time()
     try:
         if cv:
-            scores = cross_val_score(model, X_train_prep, y_train, cv=cv, scoring=metric, n_jobs=-1)
+            n_jobs = 1 if "TabICL" in name else -1
+            scores = cross_val_score(model, X_train_prep, y_train, cv=cv, scoring=metric, n_jobs=n_jobs)
             m_score = scores.mean()
             m_std = scores.std()
         else:
             # Cas non-supervisé / spécifique
-            model.fit(X_train_prep)
+            if TYPE_TACHE in ["timeseries", "regression", "classification"]:
+                model.fit(X_train_prep, y_train)
+            else:
+                # Éviter le crash/lenteur extrême de la classification hiérarchique sur les grands datasets
+                if name == "Hiérarchique" and X_train_prep.shape[0] > 10000:
+                    print(f"      ⚠️ Taille importante ({X_train_prep.shape[0]} lignes). Échantillonnage à 10 000 pour l'algorithme Hiérarchique.")
+                    indices = np.random.RandomState(42).choice(X_train_prep.shape[0], 10000, replace=False)
+                    model.fit(X_train_prep[indices])
+                else:
+                    model.fit(X_train_prep)
             m_score = 0 # Calculé plus tard dans evaluation
             m_std = 0
         

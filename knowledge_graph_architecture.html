@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Architecture du Graphe de Connaissances — Dataset Automator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #080d1a;
+      --surface: #0d1530;
+      --surface2: #111e3a;
+      --border: rgba(99,179,237,0.15);
+      --accent-blue: #63b3ed;
+      --accent-purple: #b794f4;
+      --accent-green: #68d391;
+      --accent-orange: #f6ad55;
+      --accent-pink: #fc8181;
+      --accent-teal: #4fd1c5;
+      --text: #e2e8f0;
+      --text-dim: #718096;
+      --text-bright: #fff;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 10% 20%, rgba(99,130,237,0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 60% at 90% 80%, rgba(183,130,244,0.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .page { max-width: 1320px; margin: 0 auto; padding: 48px 32px; }
+    .header { text-align: center; margin-bottom: 64px; }
+    .badge { display:inline-flex; align-items:center; gap:8px; background:rgba(99,179,237,0.1); border:1px solid rgba(99,179,237,0.3); border-radius:999px; padding:6px 18px; font-size:12px; font-weight:700; color:var(--accent-blue); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:20px; }
+    .header h1 { font-size:clamp(26px,4vw,46px); font-weight:800; background:linear-gradient(135deg,var(--accent-blue),var(--accent-purple),var(--accent-teal)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; line-height:1.15; margin-bottom:16px; }
+    .header p { font-size:15px; color:var(--text-dim); max-width:640px; margin:0 auto; line-height:1.7; }
+    .section-title { display:flex; align-items:center; gap:12px; font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-dim); margin-bottom:24px; }
+    .section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+    .layer { border-radius:20px; padding:32px; border:1px solid var(--border); transition:transform 0.3s; }
+    .layer:hover { transform:translateX(4px); }
+    .layer-connector { display:flex; flex-direction:column; align-items:center; padding:8px 0; gap:4px; }
+    .connector-arrow { width:2px; height:28px; background:linear-gradient(to bottom, var(--border), rgba(99,179,237,0.4), var(--border)); }
+    .connector-label { font-size:10px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-dim); background:var(--surface); padding:3px 10px; border-radius:999px; border:1px solid var(--border); }
+    .layer-1 { background:linear-gradient(135deg,rgba(246,173,85,0.07),rgba(250,240,137,0.04)); border-color:rgba(246,173,85,0.25); }
+    .layer-2 { background:linear-gradient(135deg,rgba(72,209,180,0.07),rgba(99,179,237,0.04)); border-color:rgba(72,209,180,0.25); }
+    .layer-3 { background:linear-gradient(135deg,rgba(183,130,244,0.07),rgba(252,129,129,0.04)); border-color:rgba(183,130,244,0.25); }
+    .layer-header { display:flex; align-items:flex-start; gap:16px; margin-bottom:24px; }
+    .layer-icon { width:52px; height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; }
+    .layer-icon-1 { background:rgba(246,173,85,0.15); border:1px solid rgba(246,173,85,0.3); }
+    .layer-icon-2 { background:rgba(72,209,180,0.15); border:1px solid rgba(72,209,180,0.3); }
+    .layer-icon-3 { background:rgba(183,130,244,0.15); border:1px solid rgba(183,130,244,0.3); }
+    .layer-tag { font-size:10px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; padding:3px 10px; border-radius:999px; margin-bottom:6px; display:inline-block; }
+    .layer-tag-1 { background:rgba(246,173,85,0.15); color:var(--accent-orange); border:1px solid rgba(246,173,85,0.3); }
+    .layer-tag-2 { background:rgba(72,209,180,0.15); color:var(--accent-teal); border:1px solid rgba(72,209,180,0.3); }
+    .layer-tag-3 { background:rgba(183,130,244,0.15); color:var(--accent-purple); border:1px solid rgba(183,130,244,0.3); }
+    .layer h2 { font-size:20px; font-weight:700; color:var(--text-bright); margin-bottom:4px; }
+    .layer > p, .layer-meta > p { font-size:14px; color:var(--text-dim); line-height:1.6; }
+    .node-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:12px; margin-top:8px; }
+    .node-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:14px 16px; transition:all 0.2s; }
+    .node-card:hover { background:rgba(255,255,255,0.06); transform:translateY(-2px); }
+    .node-label { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; margin-bottom:4px; }
+    .node-desc { font-size:11px; color:var(--text-dim); line-height:1.5; }
+    .nl-o { color:var(--accent-orange); }
+    .nl-t { color:var(--accent-teal); }
+    .nl-p { color:var(--accent-purple); }
+    .nl-b { color:var(--accent-blue); }
+    .nl-g { color:var(--accent-green); }
+    .nl-k { color:var(--accent-pink); }
+    .okf-example { background:rgba(0,0,0,0.3); border:1px solid rgba(246,173,85,0.2); border-radius:12px; padding:16px 20px; margin-top:16px; font-family:'JetBrains Mono',monospace; font-size:12px; line-height:1.7; }
+    .oc { color:var(--text-dim); } .ok { color:var(--accent-blue); } .ov { color:var(--accent-green); }
+    .os { color:var(--accent-orange); } .on { color:var(--accent-pink); }
+    .rel-grid { display:grid; grid-template-columns:1fr auto 1fr; gap:8px 16px; align-items:center; margin-top:16px; }
+    .rel-from { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; color:var(--accent-purple); text-align:right; }
+    .rel-arrow { font-size:11px; color:var(--text-dim); white-space:nowrap; text-align:center; }
+    .rel-to { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; color:var(--accent-teal); }
+    .query-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:64px; }
+    .query-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; transition:all 0.3s; }
+    .query-card:hover { box-shadow:0 8px 32px rgba(0,0,0,0.3); transform:translateY(-2px); }
+    .query-header { padding:14px 20px; display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--border); }
+    .query-header-title { font-size:13px; font-weight:700; color:var(--text-bright); flex:1; }
+    .query-header-badge { font-size:10px; font-weight:600; padding:2px 8px; border-radius:999px; }
+    .query-body { padding:16px 20px; }
+    .cypher-code { font-family:'JetBrains Mono',monospace; font-size:11px; line-height:1.8; background:rgba(0,0,0,0.3); border-radius:8px; padding:12px 14px; margin-bottom:10px; border:1px solid rgba(99,179,237,0.1); }
+    .ck { color:var(--accent-blue); font-weight:600; }
+    .cl { color:var(--accent-orange); }
+    .cp { color:var(--accent-green); }
+    .cs { color:var(--accent-pink); }
+    .cr { color:var(--accent-purple); }
+    .cc { color:var(--text-dim); }
+    .query-desc { font-size:12px; color:var(--text-dim); line-height:1.6; }
+    table { width:100%; border-collapse:collapse; border-radius:16px; overflow:hidden; margin-bottom:48px; }
+    th { background:var(--surface2); padding:14px 20px; text-align:left; font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-dim); border-bottom:1px solid var(--border); }
+    td { padding:14px 20px; font-size:13px; border-bottom:1px solid rgba(255,255,255,0.03); vertical-align:top; line-height:1.6; }
+    tr:last-child td { border-bottom:none; }
+    tr:hover td { background:rgba(255,255,255,0.02); }
+    .td-mono { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; }
+    .highlight-box { background:linear-gradient(135deg,rgba(72,209,180,0.07),rgba(99,179,237,0.05)); border:1px solid rgba(72,209,180,0.2); border-radius:16px; padding:28px 32px; margin-bottom:64px; }
+    .highlight-box h3 { font-size:16px; font-weight:700; color:var(--accent-teal); margin-bottom:16px; }
+    .highlight-box ul { list-style:none; display:flex; flex-direction:column; gap:10px; }
+    .highlight-box li { display:flex; align-items:flex-start; gap:10px; font-size:14px; line-height:1.6; }
+    .highlight-box li::before { content:'→'; color:var(--accent-teal); font-weight:700; flex-shrink:0; margin-top:2px; }
+    .highlight-box li strong { color:var(--text-bright); }
+    .footer { text-align:center; padding-top:48px; border-top:1px solid var(--border); color:var(--text-dim); font-size:13px; }
+    .footer strong { color:var(--accent-blue); }
+    @media(max-width:768px) {
+      .node-grid { grid-template-columns:1fr 1fr; }
+      .query-grid { grid-template-columns:1fr; }
+      .rel-grid { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="badge">📚 Architecture Épistémique</div>
+    <h1>Ontologie · OKF · Graphe de Connaissances</h1>
+    <p>Comment le Dataset Automator structure, stocke et interroge ses 3 couches de connaissances pour guider chaque décision du pipeline IA.</p>
+  </div>
+
+  <div class="section-title">Les 3 couches de connaissance</div>
+
+  <div class="layer layer-1" style="margin-bottom:0">
+    <div class="layer-header">
+      <div class="layer-icon layer-icon-1">📄</div>
+      <div class="layer-meta">
+        <div class="layer-tag layer-tag-1">Couche 1 — Connaissance Déclarative Métier</div>
+        <h2>OKF — Open Knowledge Format</h2>
+        <p>Fichiers <code style="color:var(--accent-orange)">.okf.md</code> dans <code style="color:var(--accent-orange)">knowledge_base/</code>. Formules métiers, règles business, seuils de performance, attributs sensibles par domaine.</p>
+      </div>
+    </div>
+    <div class="node-grid">
+      <div class="node-card"><div class="node-label nl-o">medical_context.okf.md</div><div class="node-desc">IMC = Weight/(H²), MAP = (SysBP+2·DiaBP)/3, min_f1 ≥ 0.80, sensitifs: [Age, Gender]</div></div>
+      <div class="node-card"><div class="node-label nl-o">concept_smote.md</div><div class="node-desc">Définition SMOTE, code Python, règle: train uniquement, jamais sur le test set</div></div>
+      <div class="node-card"><div class="node-label nl-o">concept_roc_auc.md</div><div class="node-desc">Formule AUC, interprétation métier, quand privilégier Recall vs Précision</div></div>
+      <div class="node-card"><div class="node-label nl-o">33 domaines couverts</div><div class="node-desc">classification, medical, finance, telecom, ecommerce, time_series, nlp, clustering…</div></div>
+    </div>
+    <div class="okf-example">
+      <span class="oc">--- (frontmatter YAML) ---</span><br>
+      <span class="ok">domain:</span> <span class="os">medical</span><br>
+      <span class="ok">formulas:</span><br>
+      &nbsp;&nbsp;<span class="oc">- name:</span> <span class="os">IMC</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="ok">formula:</span> <span class="os">"Weight / (Height ** 2)"</span><br>
+      <span class="ok">business_rules:</span><br>
+      &nbsp;&nbsp;<span class="ok">recall_priority:</span> <span class="on">true</span><br>
+      &nbsp;&nbsp;<span class="ok">sensitive_attributes:</span> <span class="os">[Gender, Age]</span><br>
+      <span class="ok">performance_thresholds:</span><br>
+      &nbsp;&nbsp;<span class="ok">min_f1_score:</span> <span class="on">0.80</span><br>
+      <span class="oc">--- (fin) ---</span>
+    </div>
+  </div>
+
+  <div class="layer-connector">
+    <div class="connector-arrow"></div>
+    <div class="connector-label">📥 OKFReader.parse() → ingestion dans Neo4j au démarrage</div>
+    <div class="connector-arrow"></div>
+  </div>
+
+  <div class="layer layer-2" style="margin-bottom:0">
+    <div class="layer-header">
+      <div class="layer-icon layer-icon-2">🗂️</div>
+      <div class="layer-meta">
+        <div class="layer-tag layer-tag-2">Couche 2 — Ontologie de Concepts Structurés</div>
+        <h2>knowledge_base/ — 33 Domaines comme Ontologie</h2>
+        <p>Chaque dossier = un domaine. Chaque fichier .md = un concept parsé et importé comme nœud <code style="color:var(--accent-teal)">:Concept</code> dans Neo4j. C'est la bibliothèque épistémique du système.</p>
+      </div>
+    </div>
+    <div class="node-grid">
+      <div class="node-card"><div class="node-label nl-t">:Concept</div><div class="node-desc">name, definition, category, formula, token_estimate — issu du frontmatter .md</div></div>
+      <div class="node-card"><div class="node-label nl-t">:Domain</div><div class="node-desc">medical, telecom, finance, classification, time_series… — 33 nœuds racines</div></div>
+      <div class="node-card"><div class="node-label nl-t">:Tool</div><div class="node-desc">SMOTE, XGBoost, TabICL, Optuna, SHAP… liés aux concepts via [:IMPLEMENTED_BY]</div></div>
+      <div class="node-card"><div class="node-label nl-t">:InterpretationRule</div><div class="node-desc">guideline + business_impact par domaine → injectées dans le prompt rapport LLM</div></div>
+    </div>
+  </div>
+
+  <div class="layer-connector">
+    <div class="connector-arrow"></div>
+    <div class="connector-label">🔗 MERGE Cypher temps réel — mémoire épisodique après chaque run</div>
+    <div class="connector-arrow"></div>
+  </div>
+
+  <div class="layer layer-3" style="margin-bottom:48px">
+    <div class="layer-header">
+      <div class="layer-icon layer-icon-3">🧠</div>
+      <div class="layer-meta">
+        <div class="layer-tag layer-tag-3">Couche 3 — Mémoire Vivante & Graphe d'Exécution</div>
+        <h2>Neo4j — Graphe de Connaissances Dynamique</h2>
+        <p>Combine connaissance statique (concepts) et mémoire épisodique (runs, alertes, remèdes). Évolue après chaque exécution. Accessible via KnowledgeGraphClient (TypeScript) et MCP Server (IDE).</p>
+      </div>
+    </div>
+    <div class="node-grid">
+      <div class="node-card"><div class="node-label nl-p">:Run</div><div class="node-desc">id, taskType, status, metrics (JSON compact), strategy, timestamp</div></div>
+      <div class="node-card"><div class="node-label nl-p">:Dataset</div><div class="node-desc">name, n_rows, n_cols — lié aux Runs et au Domain</div></div>
+      <div class="node-card"><div class="node-label nl-p">:Model</div><div class="node-desc">RandomForest, XGBoost, TabICL — Champion lié au Run réussi</div></div>
+      <div class="node-card"><div class="node-label nl-p">:Alert</div><div class="node-desc">overfitting, fairness_violation, low_cv_stability — via [:RAISED] / [:FAILED_WITH]</div></div>
+      <div class="node-card"><div class="node-label nl-p">:Remedy</div><div class="node-desc">Solution de remédiation par type d'alerte (ex: pruning Optuna pour overfitting)</div></div>
+      <div class="node-card"><div class="node-label nl-p">:DecisionTree</div><div class="node-desc">Règles gouvernance agentique : niveau supervision humaine requis avant pipeline</div></div>
+      <div class="node-card"><div class="node-label nl-p">:BusinessCost</div><div class="node-desc">cost_FP, cost_FN, gain_TP, currency — par domaine (télécom: FN=25 000 FCFA)</div></div>
+      <div class="node-card"><div class="node-label nl-p">:PerformanceThreshold</div><div class="node-desc">min_f1, min_r2, max_overfitting_gap — les Guardrails mathématiques configurables</div></div>
+    </div>
+    <div style="margin-top:20px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;">Relations principales</div>
+      <div class="rel-grid">
+        <div class="rel-from">:Dataset</div><div class="rel-arrow">─[:BELONGS_TO]→</div><div class="rel-to">:Domain</div>
+        <div class="rel-from">:Dataset</div><div class="rel-arrow">─[:HAS_RUN]→</div><div class="rel-to">:Run</div>
+        <div class="rel-from">:Run</div><div class="rel-arrow">─[:USED_MODEL]→</div><div class="rel-to">:Model</div>
+        <div class="rel-from">:Run</div><div class="rel-arrow">─[:RAISED]→</div><div class="rel-to">:Alert</div>
+        <div class="rel-from">:Alert</div><div class="rel-arrow">─[:RESOLVED_BY]→</div><div class="rel-to">:Run (succès)</div>
+        <div class="rel-from">:Concept</div><div class="rel-arrow">─[:BELONGS_TO]→</div><div class="rel-to">:Domain</div>
+        <div class="rel-from">:Concept</div><div class="rel-arrow">─[:IMPLEMENTED_BY]→</div><div class="rel-to">:Tool</div>
+        <div class="rel-from">:Domain</div><div class="rel-arrow">─[:HAS_FAIRNESS_THRESHOLD]→</div><div class="rel-to">:FairnessThreshold</div>
+        <div class="rel-from">:ColumnMapping</div><div class="rel-arrow">─[:MAPS_TO]→</div><div class="rel-to">:SemanticConcept</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">Requêtes Cypher clés dans le pipeline</div>
+
+  <div class="query-grid">
+    <div class="query-card">
+      <div class="query-header" style="background:rgba(99,179,237,0.05)">
+        <div style="font-size:18px">📚</div>
+        <div class="query-header-title">RAG Stratégie — Concepts du domaine</div>
+        <div class="query-header-badge" style="background:rgba(99,179,237,0.15);color:var(--accent-blue);border:1px solid rgba(99,179,237,0.3)">Phase 2</div>
+      </div>
+      <div class="query-body">
+        <div class="cypher-code">
+          <span class="ck">MATCH</span> (c:<span class="cl">Concept</span>)-[:<span class="cr">BELONGS_TO</span>]-&gt;(d:<span class="cl">Domain</span>)<br>
+          <span class="ck">WHERE</span> d.<span class="cp">name</span> <span class="ck">IN</span> [<span class="cs">"classification"</span>,<span class="cs">"medical"</span>]<br>
+          <span class="ck">RETURN</span> c.<span class="cp">name</span>, c.<span class="cp">definition</span>, c.<span class="cp">formula</span><br>
+          <span class="ck">ORDER BY</span> c.<span class="cp">token_estimate</span> <span class="ck">ASC LIMIT</span> <span class="cs">10</span>
+        </div>
+        <div class="query-desc">10 concepts les plus légers en tokens du domaine détecté — injectés dans le prompt LLM pour guider la stratégie de nettoyage.</div>
+      </div>
+    </div>
+
+    <div class="query-card">
+      <div class="query-header" style="background:rgba(183,130,244,0.05)">
+        <div style="font-size:18px">🔮</div>
+        <div class="query-header-title">Mémoire Épisodique — Runs similaires</div>
+        <div class="query-header-badge" style="background:rgba(183,130,244,0.15);color:var(--accent-purple);border:1px solid rgba(183,130,244,0.3)">Self-Healing RAG</div>
+      </div>
+      <div class="query-body">
+        <div class="cypher-code">
+          <span class="ck">MATCH</span> (dom:<span class="cl">Domain</span> {<span class="cp">name</span>: <span class="cs">$domain</span>})<br>
+          &lt;-[:<span class="cr">BELONGS_TO</span>]-(ds:<span class="cl">Dataset</span>)-[:<span class="cr">HAS_RUN</span>]-&gt;(r:<span class="cl">Run</span>)<br>
+          <span class="ck">WHERE</span> r.<span class="cp">taskType</span> = <span class="cs">$taskType</span><br>
+          &nbsp;&nbsp;<span class="ck">AND</span> r.<span class="cp">status</span> = <span class="cs">'SUCCESS'</span><br>
+          <span class="ck">MATCH</span> (r)-[:<span class="cr">USED_MODEL</span>]-&gt;(m)<br>
+          <span class="ck">RETURN</span> ds.<span class="cp">name</span>, m.<span class="cp">name</span>, r.<span class="cp">metrics</span><br>
+          <span class="ck">ORDER BY</span> r.<span class="cp">timestamp</span> <span class="ck">DESC LIMIT</span> <span class="cs">3</span>
+        </div>
+        <div class="query-desc">3 derniers runs réussis du même domaine — résumés en ~30 tokens/run (compact) pour éviter le bloat du contexte LLM.</div>
+      </div>
+    </div>
+
+    <div class="query-card">
+      <div class="query-header" style="background:rgba(252,129,129,0.05)">
+        <div style="font-size:18px">🚑</div>
+        <div class="query-header-title">Remédiation d'alerte en live</div>
+        <div class="query-header-badge" style="background:rgba(252,129,129,0.15);color:var(--accent-pink);border:1px solid rgba(252,129,129,0.3)">Guardrail échoué</div>
+      </div>
+      <div class="query-body">
+        <div class="cypher-code">
+          <span class="ck">MATCH</span> (rem:<span class="cl">Remedy</span>)<br>
+          <span class="ck">WHERE</span> rem.<span class="cp">name</span> =~ <span class="cs">$pattern</span><br>
+          <span class="cc">// ex: '(?i).*overfitting.*'</span><br>
+          <span class="ck">RETURN</span> rem.<span class="cp">name</span>,<br>
+          &nbsp;&nbsp;rem.<span class="cp">action</span>, rem.<span class="cp">code_snippet</span><br>
+          <span class="ck">LIMIT</span> <span class="cs">1</span>
+        </div>
+        <div class="query-desc">Dès qu'un Guardrail échoue, le remède est extrait en live. Ex: "overfitting" → "augmenter l'élagage Optuna / réduire n_estimators".</div>
+      </div>
+    </div>
+
+    <div class="query-card">
+      <div class="query-header" style="background:rgba(104,211,145,0.05)">
+        <div style="font-size:18px">🏛️</div>
+        <div class="query-header-title">Gouvernance agentique</div>
+        <div class="query-header-badge" style="background:rgba(104,211,145,0.15);color:var(--accent-green);border:1px solid rgba(104,211,145,0.3)">Supervision</div>
+      </div>
+      <div class="query-body">
+        <div class="cypher-code">
+          <span class="ck">MATCH</span> (dt:<span class="cl">DecisionTree</span> {<span class="cp">id</span>: <span class="cs">'agentic-human-supervision'</span>})<br>
+          -[:<span class="cr">HAS_BRANCH</span>]-&gt;(b:<span class="cl">DecisionBranch</span>)<br>
+          <span class="ck">RETURN</span> dt.<span class="cp">question</span>,<br>
+          &nbsp;&nbsp;collect({<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<span class="cp">condition</span>: b.<span class="cp">condition</span>,<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<span class="cp">action</span>: b.<span class="cp">action</span>}) <span class="ck">AS</span> rules
+        </div>
+        <div class="query-desc">Règles de supervision humaine lues depuis le graphe — "Niveau 2 : Validation avant pipeline" déclenchée avant chaque exécution physique.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">Récapitulatif — Qui fait quoi ?</div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Composant</th>
+        <th>Format</th>
+        <th>Rôle dans le workflow</th>
+        <th>Moment d'utilisation</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="td-mono" style="color:var(--accent-orange)">OKF (.okf.md)</td>
+        <td>YAML frontmatter + Markdown</td>
+        <td>Formules métiers (IMC, MAP…), seuils min_f1, attributs sensibles — parsé par OKFReader.ts</td>
+        <td>Phase 2 — avant appel LLM stratège</td>
+      </tr>
+      <tr>
+        <td class="td-mono" style="color:var(--accent-teal)">knowledge_base/</td>
+        <td>33 dossiers .md par domaine</td>
+        <td>Bibliothèque de concepts IA/ML : définitions, outils, règles — importés comme nœuds Neo4j</td>
+        <td>Boot / rechargement unique</td>
+      </tr>
+      <tr>
+        <td class="td-mono" style="color:var(--accent-purple)">Neo4j (Graphe)</td>
+        <td>Base de données graphe Bolt</td>
+        <td>Mémoire vive : concepts statiques + runs épisodiques + alertes + remèdes — MATCH/MERGE Cypher</td>
+        <td>Chaque phase du pipeline (2,3,4,5,8,9)</td>
+      </tr>
+      <tr>
+        <td class="td-mono" style="color:var(--accent-blue)">KnowledgeGraphClient</td>
+        <td>TypeScript class (621 lignes)</td>
+        <td>Interface TS ↔ Neo4j : 15+ méthodes (queryForStrategy, saveRunMetadata, getTopSimilarRuns…)</td>
+        <td>Interne orchestrateur TypeScript</td>
+      </tr>
+      <tr>
+        <td class="td-mono" style="color:var(--accent-green)">MCP Neo4j Server</td>
+        <td>Serveur MCP stdio TypeScript</td>
+        <td>Expose 4 outils Cypher en lecture seule vers l'IDE : execute_cypher, get_concept, find_tools, evaluate_decision_tree</td>
+        <td>Accessible depuis Antigravity IDE</td>
+      </tr>
+      <tr>
+        <td class="td-mono" style="color:var(--accent-pink)">OKFReader.ts</td>
+        <td>Parser TypeScript</td>
+        <td>Lit et parse les fichiers .okf.md sans dépendance externe. Retourne OKFContext structuré (formulas, thresholds, rules).</td>
+        <td>Phase 2 — injection formules métiers</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="highlight-box">
+    <h3>🔑 Principe clé : le Graphe comme Cerveau Distribué</h3>
+    <ul>
+      <li><strong>Statique (concepts, domaines)</strong> : ingéré depuis knowledge_base/ → donne au LLM des connaissances ML sans réentraînement</li>
+      <li><strong>Dynamique (runs, alertes)</strong> : mis à jour après chaque pipeline → le système apprend de ses erreurs via FAILED_WITH → RESOLVED_BY</li>
+      <li><strong>Normatif (seuils, règles)</strong> : PerformanceThreshold + FairnessThreshold + BusinessCost par domaine → Guardrails configurables sans toucher au code</li>
+      <li><strong>Compact par design</strong> : getTopSimilarRuns() retourne ~30 tokens/run (pas 2000+) → évite le bloat du contexte LLM</li>
+      <li><strong>Fédéré</strong> : exportAnonymizedKnowledge() + importSharedKnowledge() → partage de connaissance entre instances (data sovereignty)</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    <strong>Dataset Automator — CAM Data Sovereign Solutions</strong><br>
+    Architecture 3 couches : OKF · knowledge_base Ontologie · Neo4j Graph · MCP Server
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,6764 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Dataset Automator - Graphe de Connaissances Interactif</title>
+    <!-- Chargement de vis-network et Google Fonts -->
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #080c14;
+            color: #e2e8f0;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+        }
+        
+        /* Layout */
+        #sidebar {
+            width: 380px;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            z-index: 10;
+            overflow-y: auto;
+            box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+        }
+        #graph-container {
+            flex-grow: 1;
+            height: 100%;
+            position: relative;
+        }
+        #mynetwork {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Typography */
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #38bdf8, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .subtitle {
+            font-size: 11px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 24px;
+            font-weight: 600;
+        }
+        h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 14px;
+            color: #94a3b8;
+            margin-bottom: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        /* Utilities */
+        .section {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+        .section:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+            margin-bottom: 0;
+        }
+        
+        /* Search Bar */
+        .search-box {
+            position: relative;
+            margin-bottom: 12px;
+        }
+        .search-box i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            font-size: 14px;
+        }
+        .search-input {
+            width: 100%;
+            padding: 10px 12px 10px 36px;
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 13px;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .search-input:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+            background: rgba(30, 41, 59, 0.9);
+        }
+        .search-results {
+            position: absolute;
+            width: 100%;
+            background: #0f172a;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            margin-top: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+        .search-item {
+            padding: 10px 12px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background 0.15s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .search-item:hover {
+            background: rgba(99, 102, 241, 0.2);
+        }
+        .search-item .badge {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        
+        /* Legend & Stats */
+        .legend-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #cbd5e1;
+            padding: 6px 8px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.02);
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        .legend-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            display: inline-block;
+        }
+        .legend-label-container {
+            display: flex;
+            align-items: center;
+        }
+        .count-badge {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        
+        /* Node Inspector */
+        .inspector-placeholder {
+            color: #64748b;
+            font-size: 13px;
+            text-align: center;
+            padding: 30px 10px;
+            border: 2px dashed rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+        .inspector-panel {
+            display: none;
+        }
+        .inspector-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .inspector-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 16px;
+            color: #fff;
+            font-weight: 600;
+        }
+        .inspector-type {
+            font-size: 10px;
+            text-transform: uppercase;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 12px;
+            color: #fff;
+            letter-spacing: 0.5px;
+        }
+        .inspector-desc {
+            font-size: 13px;
+            line-height: 1.5;
+            color: #cbd5e1;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            max-height: 150px;
+            overflow-y: auto;
+            border-left: 3px solid #6366f1;
+        }
+        .inspector-meta {
+            font-size: 12px;
+            color: #94a3b8;
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 6px 12px;
+            margin-bottom: 12px;
+        }
+        .inspector-meta-label {
+            font-weight: 600;
+            color: #64748b;
+        }
+        .inspector-connections {
+            margin-top: 14px;
+        }
+        .inspector-conn-list {
+            list-style: none;
+            max-height: 180px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .inspector-conn-item {
+            font-size: 12px;
+            padding: 6px 8px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            transition: background 0.15s;
+        }
+        .inspector-conn-item:hover {
+            background: rgba(99, 102, 241, 0.15);
+        }
+        .inspector-conn-rel {
+            color: #6366f1;
+            font-weight: 500;
+            font-size: 11px;
+        }
+        
+        /* Controls */
+        .control-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .control-label {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        .control-slider {
+            width: 150px;
+            accent-color: #6366f1;
+        }
+        .control-btn {
+            background: #6366f1;
+            color: #fff;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            justify-content: center;
+            width: 100%;
+        }
+        .control-btn:hover {
+            background: #4f46e5;
+        }
+        .control-btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .control-btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Overlay Widgets on Map */
+        .overlay-widget {
+            position: absolute;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 12px 18px;
+            z-index: 5;
+            pointer-events: auto;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+        }
+        #stats-widget {
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 24px;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-val {
+            font-family: 'Outfit', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+        }
+        .stat-lbl {
+            font-size: 10px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        #instructions-widget {
+            bottom: 20px;
+            right: 20px;
+            color: #64748b;
+            font-size: 11px;
+            display: flex;
+            gap: 16px;
+        }
+        .instruction-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        /* Loading Bar styled beautifully */
+        #loadingBar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #080c14;
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s ease;
+        }
+        .loader-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(99, 102, 241, 0.1);
+            border-radius: 50%;
+            border-top-color: #6366f1;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        .loader-text {
+            font-family: 'Outfit', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+        .loader-progress {
+            width: 200px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+        .loader-bar {
+            height: 100%;
+            width: 0%;
+            background: #6366f1;
+            border-radius: 2px;
+            transition: width 0.1s;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loading Bar -->
+    <div id="loadingBar">
+        <div class="loader-spinner"></div>
+        <div class="loader-text" id="loaderText">Initialisation du graphe...</div>
+        <div class="loader-progress">
+            <div class="loader-bar" id="loaderBarWidth"></div>
+        </div>
+    </div>
+
+    <!-- Sidebar Menu Dashboard -->
+    <div id="sidebar">
+        <div class="section" style="border-bottom: none; padding-bottom: 0; margin-bottom: 16px;">
+            <h1><i class="fa-solid fa-brain"></i> Dataset Automator</h1>
+            <div class="subtitle">Graphe de Connaissances MLOps</div>
+        </div>
+
+        <!-- Search Box -->
+        <div class="section">
+            <h2><i class="fa-solid fa-magnifying-glass"></i> Rechercher un concept</h2>
+            <div class="search-box">
+                <i class="fa-solid fa-search"></i>
+                <input type="text" class="search-input" id="searchInput" placeholder="Taper le nom d'un nœud..." oninput="handleSearch()">
+                <div class="search-results" id="searchResults"></div>
+            </div>
+            <button class="control-btn control-btn-secondary" onclick="resetHighlight()"><i class="fa-solid fa-arrows-spin"></i> Réinitialiser la vue</button>
+        </div>
+
+        <!-- Legend / Filter Categories -->
+        <div class="section">
+            <h2><i class="fa-solid fa-tags"></i> Légende & Filtres</h2>
+            <div class="legend-grid" id="legendGrid">
+                <!-- Rempli dynamiquement en JS -->
+            </div>
+        </div>
+
+        <!-- Node Inspector -->
+        <div class="section" style="flex-grow: 1;">
+            <h2><i class="fa-solid fa-circle-info"></i> Inspecteur d'Éléments</h2>
+            <div class="inspector-placeholder" id="inspectorPlaceholder">
+                Cliquez sur un nœud dans le graphe pour inspecter ses propriétés et ses relations directes.
+            </div>
+            <div class="inspector-panel" id="inspectorPanel">
+                <div class="inspector-header">
+                    <span class="inspector-title" id="nodeName">Nom du Noeud</span>
+                    <span class="inspector-type" id="nodeTypeTag">Concept</span>
+                </div>
+                <div class="inspector-desc" id="nodeDesc">
+                    Définition ou détails du nœud...
+                </div>
+                <div id="nodeMetaContainer" class="inspector-meta">
+                    <!-- Rempli dynamiquement -->
+                </div>
+                <div class="inspector-connections">
+                    <h2><i class="fa-solid fa-circle-nodes"></i> Relations Directes</h2>
+                    <ul class="inspector-conn-list" id="connectionsList">
+                        <!-- Rempli dynamiquement -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Physical Controls -->
+        <div class="section" style="margin-bottom: 0; padding-bottom: 0;">
+            <h2><i class="fa-solid fa-sliders"></i> Simulation Physique</h2>
+            <div class="control-row">
+                <span class="control-label">Gravité</span>
+                <input type="range" class="control-slider" id="gravitySlider" min="-5000" max="-500" step="100" value="-2000" oninput="changePhysics()">
+            </div>
+            <div class="control-row" style="margin-bottom: 16px;">
+                <span class="control-label">Élastique</span>
+                <input type="range" class="control-slider" id="springSlider" min="50" max="250" step="10" value="95" oninput="changePhysics()">
+            </div>
+            <button class="control-btn" id="physicsBtn" onclick="togglePhysics()"><i class="fa-solid fa-pause"></i> Figer le mouvement</button>
+        </div>
+    </div>
+
+    <!-- Graph Visualizer -->
+    <div id="graph-container">
+        <!-- Floating overlay widgets -->
+        <div class="overlay-widget" id="stats-widget">
+            <div class="stat-item">
+                <div class="stat-val" id="totalNodesVal">0</div>
+                <div class="stat-lbl">Nœuds</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-val" id="totalRelsVal">0</div>
+                <div class="stat-lbl">Relations</div>
+            </div>
+        </div>
+
+        <div class="overlay-widget" id="instructions-widget">
+            <div class="instruction-item"><i class="fa-solid fa-mouse-pointer"></i> Clic: Inspecter</div>
+            <div class="instruction-item"><i class="fa-solid fa-circle-dot"></i> Double Clic: Focus</div>
+            <div class="instruction-item"><i class="fa-solid fa-scroll"></i> Molette: Zoomer</div>
+            <div class="instruction-item"><i class="fa-solid fa-arrows-up-down-left-right"></i> Glisser: Déplacer</div>
+        </div>
+
+        <!-- Vis Network Draw Canvas -->
+        <div id="mynetwork"></div>
+    </div>
+
+    <!-- Graph Initialisation Data -->
+    <script type="text/javascript">
+        // Injecter les données depuis Python
+        const rawNodes = [
+  {
+    "id": 0,
+    "label": "test_dataset_mock",
+    "type": "Dataset",
+    "properties": {},
+    "color": {
+      "background": "#6b7280",
+      "border": "#d1d5db",
+      "highlight": {
+        "background": "#4b5563",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 1,
+    "label": "XGBoost Regressor",
+    "type": "Model",
+    "properties": {},
+    "color": {
+      "background": "#3b82f6",
+      "border": "#93c5fd",
+      "highlight": {
+        "background": "#2563eb",
+        "border": "#ffffff"
+      }
+    },
+    "size": 20
+  },
+  {
+    "id": 2,
+    "label": "Node_2",
+    "type": "Run",
+    "properties": {
+      "taskType": "regression",
+      "metrics": "{\"r2\":0.92,\"rmse\":0.05}",
+      "id": "run-test-temp-1781987697638",
+      "strategy": "{\"target\":\"target_mock\",\"steps\":[{\"column\":\"mock_col\",\"action\":\"scale\",\"reasoning\":\"Test code\"}]}",
+      "timestamp": 1781987697639.0
+    },
+    "color": {
+      "background": "#0d9488",
+      "border": "#99f6e4",
+      "highlight": {
+        "background": "#0f766e",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 3,
+    "label": "Identifier",
+    "type": "SemanticConcept",
+    "properties": {
+      "definition": "Colonne d'identification unique \u00e0 haute cardinalit\u00e9 (ex: ID client, ID commande)"
+    },
+    "color": {
+      "background": "#a855f7",
+      "border": "#d8b4fe",
+      "highlight": {
+        "background": "#9333ea",
+        "border": "#ffffff"
+      }
+    },
+    "size": 20
+  },
+  {
+    "id": 4,
+    "label": "MonetaryValue",
+    "type": "SemanticConcept",
+    "properties": {
+      "definition": "Donn\u00e9e num\u00e9rique repr\u00e9sentant des transactions financi\u00e8res, des prix ou des co\u00fbts"
+    },
+    "color": {
+      "background": "#a855f7",
+      "border": "#d8b4fe",
+      "highlight": {
+        "background": "#9333ea",
+        "border": "#ffffff"
+      }
+    },
+    "size": 20
+  },
+  {
+    "id": 5,
+    "label": "TemporalCycle",
+    "type": "SemanticConcept",
+    "properties": {
+      "definition": "Donn\u00e9e temporelle ou cyclique (ex: mois de l'ann\u00e9e, jour de la semaine)"
+    },
+    "color": {
+      "background": "#a855f7",
+      "border": "#d8b4fe",
+      "highlight": {
+        "background": "#9333ea",
+        "border": "#ffffff"
+      }
+    },
+    "size": 20
+  },
+  {
+    "id": 6,
+    "label": "HighCardinalityCategorical",
+    "type": "SemanticConcept",
+    "properties": {
+      "definition": "Variable cat\u00e9gorielle avec un grand nombre de modalit\u00e9s uniques"
+    },
+    "color": {
+      "background": "#a855f7",
+      "border": "#d8b4fe",
+      "highlight": {
+        "background": "#9333ea",
+        "border": "#ffffff"
+      }
+    },
+    "size": 20
+  },
+  {
+    "id": 7,
+    "label": "drop",
+    "type": "Action",
+    "properties": {},
+    "color": {
+      "background": "#d946ef",
+      "border": "#f5d0fe",
+      "highlight": {
+        "background": "#c026d3",
+        "border": "#ffffff"
+      }
+    },
+    "size": 12
+  },
+  {
+    "id": 8,
+    "label": "winsorize",
+    "type": "Action",
+    "properties": {},
+    "color": {
+      "background": "#d946ef",
+      "border": "#f5d0fe",
+      "highlight": {
+        "background": "#c026d3",
+        "border": "#ffffff"
+      }
+    },
+    "size": 12
+  },
+  {
+    "id": 9,
+    "label": "scale",
+    "type": "Action",
+    "properties": {},
+    "color": {
+      "background": "#d946ef",
+      "border": "#f5d0fe",
+      "highlight": {
+        "background": "#c026d3",
+        "border": "#ffffff"
+      }
+    },
+    "size": 12
+  },
+  {
+    "id": 10,
+    "label": "encode",
+    "type": "Action",
+    "properties": {},
+    "color": {
+      "background": "#d946ef",
+      "border": "#f5d0fe",
+      "highlight": {
+        "background": "#c026d3",
+        "border": "#ffffff"
+      }
+    },
+    "size": 12
+  },
+  {
+    "id": 11,
+    "label": "order_id",
+    "type": "ColumnMapping",
+    "properties": {},
+    "color": {
+      "background": "#f97316",
+      "border": "#ffedd5",
+      "highlight": {
+        "background": "#ea580c",
+        "border": "#ffffff"
+      }
+    },
+    "size": 12
+  },
+  {
+    "id": 12,
+    "label": "Node_12",
+    "type": "Unknown",
+    "properties": {},
+    "color": {
+      "background": "#6b7280",
+      "border": "#d1d5db",
+      "highlight": {
+        "background": "#4b5563",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 13,
+    "label": "customer_id",
+    "type": "ColumnMapping",
+    "properties": {},
+    "color": {
+      "background": "#f97316",
+      "border": "#ffedd5",
+      "highlight": {
+        "background": "#ea580c",
+        "border": "#ffffff"
+      }
+    },
+    "size": 12
+  },
+  {
+    "id": 14,
+    "label": "product_id",
+    "type": "ColumnMapping",
+    "properties": {},
+    "color": {
+      "background": "#f97316",
+      "border": "#ffedd5",
+      "highlight": {
+        "background": "#ea580c",
+        "border": "#ffffff"
+      }
+    },
+    "size": 12
+  },
+  {
+    "id": 15,
+    "label": "total_amount",
+    "type": "ColumnMapping",
+    "properties": {},
+    "color": {
+      "background": "#f97316",
+      "border": "#ffedd5",
+      "highlight": {
+        "background": "#ea580c",
+        "border": "#ffffff"
+      }
+    },
+    "size": 12
+  },
+  {
+    "id": 16,
+    "label": "Node_16",
+    "type": "Unknown",
+    "properties": {},
+    "color": {
+      "background": "#6b7280",
+      "border": "#d1d5db",
+      "highlight": {
+        "background": "#4b5563",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 17,
+    "label": "profit_margin",
+    "type": "ColumnMapping",
+    "properties": {},
+    "color": {
+      "background": "#f97316",
+      "border": "#ffedd5",
+      "highlight": {
+        "background": "#ea580c",
+        "border": "#ffffff"
+      }
+    },
+    "size": 12
+  },
+  {
+    "id": 18,
+    "label": "Date",
+    "type": "ColumnMapping",
+    "properties": {},
+    "color": {
+      "background": "#f97316",
+      "border": "#ffedd5",
+      "highlight": {
+        "background": "#ea580c",
+        "border": "#ffffff"
+      }
+    },
+    "size": 12
+  },
+  {
+    "id": 19,
+    "label": "Node_19",
+    "type": "Unknown",
+    "properties": {},
+    "color": {
+      "background": "#6b7280",
+      "border": "#d1d5db",
+      "highlight": {
+        "background": "#4b5563",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 20,
+    "label": "days_inactive",
+    "type": "ColumnMapping",
+    "properties": {},
+    "color": {
+      "background": "#f97316",
+      "border": "#ffedd5",
+      "highlight": {
+        "background": "#ea580c",
+        "border": "#ffffff"
+      }
+    },
+    "size": 12
+  },
+  {
+    "id": 21,
+    "label": "Overfitting",
+    "type": "Remedy",
+    "properties": {
+      "code_snippet": "params = {\"max_depth\": trial.suggest_int(\"max_depth\", 3, 7), \"learning_rate\": trial.suggest_float(\"learning_rate\", 0.01, 0.1)}",
+      "description": "Le mod\u00e8le est en sur-apprentissage (diff\u00e9rence importante de performance entre train et test).",
+      "action": "Augmenter l'\u00e9lagage (pruning) d'Optuna ou ajouter de la r\u00e9gularisation L2 / n_estimators r\u00e9duit."
+    },
+    "color": {
+      "background": "#ec4899",
+      "border": "#fbcfe8",
+      "highlight": {
+        "background": "#db2777",
+        "border": "#ffffff"
+      }
+    },
+    "size": 20
+  },
+  {
+    "id": 22,
+    "label": "Data Drift",
+    "type": "Remedy",
+    "properties": {
+      "code_snippet": "tscv = TimeSeriesSplit(n_splits=5)",
+      "description": "Une d\u00e9rive statistique temporelle a \u00e9t\u00e9 d\u00e9tect\u00e9e sur des variables cl\u00e9s.",
+      "action": "Supprimer les variables fortement d\u00e9riv\u00e9es (comme les identifiants temporels) ou utiliser TimeSeriesSplit."
+    },
+    "color": {
+      "background": "#ec4899",
+      "border": "#fbcfe8",
+      "highlight": {
+        "background": "#db2777",
+        "border": "#ffffff"
+      }
+    },
+    "size": 20
+  },
+  {
+    "id": 23,
+    "label": "Class Imbalance",
+    "type": "Remedy",
+    "properties": {
+      "code_snippet": "class_weight=\"balanced\"",
+      "description": "Le jeu de donn\u00e9es pr\u00e9sente un d\u00e9s\u00e9quilibre fort entre les classes de la cible.",
+      "action": "Utiliser scale_pos_weight pour XGBoost/LightGBM ou class_weight=\"balanced\" pour RandomForest."
+    },
+    "color": {
+      "background": "#ec4899",
+      "border": "#fbcfe8",
+      "highlight": {
+        "background": "#db2777",
+        "border": "#ffffff"
+      }
+    },
+    "size": 20
+  },
+  {
+    "id": 24,
+    "label": "CalibrationError",
+    "type": "Remedy",
+    "properties": {
+      "code_snippet": "calibrated_model = CalibratedClassifierCV(FrozenEstimator(best_model), method=\"isotonic\", cv=[(np.arange(len(X)), np.arange(len(X)))])",
+      "action": "Utiliser FrozenEstimator pour envelopper le mod\u00e8le et passer une liste de split unique cv=[(np.arange(len(X_test)), np.arange(len(X_test)))] pour figer la calibration.",
+      "description": "Erreur de param\u00e8tre cv=\"prefit\" sur CalibratedClassifierCV avec les versions r\u00e9centes de scikit-learn (>= 1.6)."
+    },
+    "color": {
+      "background": "#ec4899",
+      "border": "#fbcfe8",
+      "highlight": {
+        "background": "#db2777",
+        "border": "#ffffff"
+      }
+    },
+    "size": 20
+  },
+  {
+    "id": 25,
+    "label": "SHAPStackingClassifierError",
+    "type": "Remedy",
+    "properties": {
+      "code_snippet": "model_to_explain = best_model.named_estimators_[\"rf\"] if hasattr(best_model, \"named_estimators_\") else best_model.predict_proba",
+      "action": "Extraire un estimateur de base d'arbre du mod\u00e8le Stacking (comme RandomForest ou LightGBM) ou passer sa fonction predict_proba \u00e0 l'Explainer g\u00e9n\u00e9ral.",
+      "description": "Erreur d'explicabilit\u00e9 SHAP sur les mod\u00e8les StackingClassifier (non appelables)."
+    },
+    "color": {
+      "background": "#ec4899",
+      "border": "#fbcfe8",
+      "highlight": {
+        "background": "#db2777",
+        "border": "#ffffff"
+      }
+    },
+    "size": 20
+  },
+  {
+    "id": 26,
+    "label": "BTC-USD (2014-2024)",
+    "type": "Dataset",
+    "properties": {},
+    "color": {
+      "background": "#6b7280",
+      "border": "#d1d5db",
+      "highlight": {
+        "background": "#4b5563",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 27,
+    "label": "LightGBM Regressor",
+    "type": "Model",
+    "properties": {},
+    "color": {
+      "background": "#3b82f6",
+      "border": "#93c5fd",
+      "highlight": {
+        "background": "#2563eb",
+        "border": "#ffffff"
+      }
+    },
+    "size": 20
+  },
+  {
+    "id": 28,
+    "label": "Node_28",
+    "type": "Run",
+    "properties": {
+      "taskType": "timeseries",
+      "id": "run-btc-usd-seed",
+      "metrics": "{\"r2\": 0.8465, \"mape\": 18.47}",
+      "strategy": "{\"target\": \"Volume\", \"steps\": [{\"column\": \"Volume\", \"action\": \"scale\"}, {\"column\": \"Date\", \"action\": \"scale\"}]}",
+      "timestamp": 1718872000
+    },
+    "color": {
+      "background": "#0d9488",
+      "border": "#99f6e4",
+      "highlight": {
+        "background": "#0f766e",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 29,
+    "label": "ecommerce_sales_34500",
+    "type": "Dataset",
+    "properties": {},
+    "color": {
+      "background": "#6b7280",
+      "border": "#d1d5db",
+      "highlight": {
+        "background": "#4b5563",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 30,
+    "label": "Hierarchical Clustering",
+    "type": "Model",
+    "properties": {},
+    "color": {
+      "background": "#3b82f6",
+      "border": "#93c5fd",
+      "highlight": {
+        "background": "#2563eb",
+        "border": "#ffffff"
+      }
+    },
+    "size": 20
+  },
+  {
+    "id": 31,
+    "label": "Node_31",
+    "type": "Run",
+    "properties": {
+      "taskType": "clustering",
+      "metrics": "{\"silhouette\": 0.53}",
+      "id": "run-ecommerce-seed",
+      "strategy": "{\"target\": \"None\", \"steps\": [{\"column\": \"order_id\", \"action\": \"drop\"}, {\"column\": \"customer_id\", \"action\": \"drop\"}, {\"column\": \"product_id\", \"action\": \"drop\"}, {\"column\": \"total_amount\", \"action\": \"winsorize\"}, {\"column\": \"profit_margin\", \"action\": \"scale\"}]}",
+      "timestamp": 1718873000
+    },
+    "color": {
+      "background": "#0d9488",
+      "border": "#99f6e4",
+      "highlight": {
+        "background": "#0f766e",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 32,
+    "label": "diabetes_data_upload",
+    "type": "Dataset",
+    "properties": {},
+    "color": {
+      "background": "#6b7280",
+      "border": "#d1d5db",
+      "highlight": {
+        "background": "#4b5563",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 33,
+    "label": "RandomForest Classifier",
+    "type": "Model",
+    "properties": {},
+    "color": {
+      "background": "#3b82f6",
+      "border": "#93c5fd",
+      "highlight": {
+        "background": "#2563eb",
+        "border": "#ffffff"
+      }
+    },
+    "size": 20
+  },
+  {
+    "id": 34,
+    "label": "Node_34",
+    "type": "Run",
+    "properties": {
+      "taskType": "classification",
+      "id": "run-diabetes-seed",
+      "metrics": "{\"accuracy\": 0.99, \"f1_score\": 0.99}",
+      "strategy": "{\"target\": \"class\", \"steps\": [{\"column\": \"Age\", \"action\": \"scale\"}, {\"column\": \"all_categorical\", \"action\": \"encode\"}]}",
+      "timestamp": 1718874000
+    },
+    "color": {
+      "background": "#0d9488",
+      "border": "#99f6e4",
+      "highlight": {
+        "background": "#0f766e",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 35,
+    "label": "ObesityDataSet_raw_and_data_sinthetic",
+    "type": "Dataset",
+    "properties": {},
+    "color": {
+      "background": "#6b7280",
+      "border": "#d1d5db",
+      "highlight": {
+        "background": "#4b5563",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 36,
+    "label": "Node_36",
+    "type": "Unknown",
+    "properties": {},
+    "color": {
+      "background": "#6b7280",
+      "border": "#d1d5db",
+      "highlight": {
+        "background": "#4b5563",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 37,
+    "label": "LightGBM Classifier",
+    "type": "Model",
+    "properties": {},
+    "color": {
+      "background": "#3b82f6",
+      "border": "#93c5fd",
+      "highlight": {
+        "background": "#2563eb",
+        "border": "#ffffff"
+      }
+    },
+    "size": 20
+  },
+  {
+    "id": 38,
+    "label": "Node_38",
+    "type": "Run",
+    "properties": {
+      "taskType": "classification",
+      "id": "run-obesity-seed",
+      "metrics": "{\"accuracy\": 0.798, \"f1_score\": 0.76}",
+      "strategy": "{\"target\": \"NObeyesdad\", \"steps\": [{\"column\": \"all_numerical\", \"action\": \"scale\"}, {\"column\": \"all_categorical\", \"action\": \"encode\"}]}",
+      "timestamp": 1718875000
+    },
+    "color": {
+      "background": "#0d9488",
+      "border": "#99f6e4",
+      "highlight": {
+        "background": "#0f766e",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 39,
+    "label": "Orchestrator",
+    "type": "Agent",
+    "properties": {
+      "role": "Orchestre les flux du pipeline, g\u00e8re l'\u00e9tat global et la gouvernance."
+    },
+    "color": {
+      "background": "#6366f1",
+      "border": "#c7d2fe",
+      "highlight": {
+        "background": "#4f46e5",
+        "border": "#ffffff"
+      }
+    },
+    "size": 24
+  },
+  {
+    "id": 40,
+    "label": "AdversarialValidator",
+    "type": "Agent",
+    "properties": {
+      "role": "D\u00e9tecte les d\u00e9rives statistiques temporelles (data drift)."
+    },
+    "color": {
+      "background": "#6366f1",
+      "border": "#c7d2fe",
+      "highlight": {
+        "background": "#4f46e5",
+        "border": "#ffffff"
+      }
+    },
+    "size": 24
+  },
+  {
+    "id": 41,
+    "label": "StrategyGenerator",
+    "type": "Agent",
+    "properties": {
+      "role": "G\u00e9n\u00e8re la strat\u00e9gie de nettoyage de donn\u00e9es optimale par Graph RAG."
+    },
+    "color": {
+      "background": "#6366f1",
+      "border": "#c7d2fe",
+      "highlight": {
+        "background": "#4f46e5",
+        "border": "#ffffff"
+      }
+    },
+    "size": 24
+  },
+  {
+    "id": 42,
+    "label": "ChartInterpreter",
+    "type": "Agent",
+    "properties": {
+      "role": "Valide visuellement les courbes de performance (matrice de confusion, r\u00e9sidus)."
+    },
+    "color": {
+      "background": "#6366f1",
+      "border": "#c7d2fe",
+      "highlight": {
+        "background": "#4f46e5",
+        "border": "#ffffff"
+      }
+    },
+    "size": 24
+  },
+  {
+    "id": 43,
+    "label": "ExplainabilityAuditor",
+    "type": "Agent",
+    "properties": {
+      "role": "Calcule l'explicabilit\u00e9 globale et locale du mod\u00e8le (SHAP)."
+    },
+    "color": {
+      "background": "#6366f1",
+      "border": "#c7d2fe",
+      "highlight": {
+        "background": "#4f46e5",
+        "border": "#ffffff"
+      }
+    },
+    "size": 24
+  },
+  {
+    "id": 44,
+    "label": "Node_44",
+    "type": "Run",
+    "properties": {
+      "taskType": "regression",
+      "metrics": "{\"r2\":0.92,\"rmse\":0.05}",
+      "id": "run-test-temp-1781988375501",
+      "strategy": "{\"target\":\"target_mock\",\"steps\":[{\"column\":\"mock_col\",\"action\":\"scale\",\"reasoning\":\"Test code\"}]}",
+      "timestamp": 1781988375502.0
+    },
+    "color": {
+      "background": "#0d9488",
+      "border": "#99f6e4",
+      "highlight": {
+        "background": "#0f766e",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 45,
+    "label": "order_id",
+    "type": "ColumnMapping",
+    "properties": {},
+    "color": {
+      "background": "#f97316",
+      "border": "#ffedd5",
+      "highlight": {
+        "background": "#ea580c",
+        "border": "#ffffff"
+      }
+    },
+    "size": 12
+  },
+  {
+    "id": 46,
+    "label": "customer_id",
+    "type": "ColumnMapping",
+    "properties": {},
+    "color": {
+      "background": "#f97316",
+      "border": "#ffedd5",
+      "highlight": {
+        "background": "#ea580c",
+        "border": "#ffffff"
+      }
+    },
+    "size": 12
+  },
+  {
+    "id": 47,
+    "label": "product_id",
+    "type": "ColumnMapping",
+    "properties": {},
+    "color": {
+      "background": "#f97316",
+      "border": "#ffedd5",
+      "highlight": {
+        "background": "#ea580c",
+        "border": "#ffffff"
+      }
+    },
+    "size": 12
+  },
+  {
+    "id": 48,
+    "label": "total_amount",
+    "type": "ColumnMapping",
+    "properties": {},
+    "color": {
+      "background": "#f97316",
+      "border": "#ffedd5",
+      "highlight": {
+        "background": "#ea580c",
+        "border": "#ffffff"
+      }
+    },
+    "size": 12
+  },
+  {
+    "id": 49,
+    "label": "profit_margin",
+    "type": "ColumnMapping",
+    "properties": {},
+    "color": {
+      "background": "#f97316",
+      "border": "#ffedd5",
+      "highlight": {
+        "background": "#ea580c",
+        "border": "#ffffff"
+      }
+    },
+    "size": 12
+  },
+  {
+    "id": 50,
+    "label": "Date",
+    "type": "ColumnMapping",
+    "properties": {},
+    "color": {
+      "background": "#f97316",
+      "border": "#ffedd5",
+      "highlight": {
+        "background": "#ea580c",
+        "border": "#ffffff"
+      }
+    },
+    "size": 12
+  },
+  {
+    "id": 51,
+    "label": "days_inactive",
+    "type": "ColumnMapping",
+    "properties": {},
+    "color": {
+      "background": "#f97316",
+      "border": "#ffedd5",
+      "highlight": {
+        "background": "#ea580c",
+        "border": "#ffffff"
+      }
+    },
+    "size": 12
+  },
+  {
+    "id": 52,
+    "label": "Node_52",
+    "type": "Run",
+    "properties": {
+      "taskType": "regression",
+      "metrics": "{\"r2\":0.92,\"rmse\":0.05}",
+      "id": "run-test-temp-1781989037759",
+      "strategy": "{\"target\":\"target_mock\",\"steps\":[{\"column\":\"mock_col\",\"action\":\"scale\",\"reasoning\":\"Test code\"}]}",
+      "timestamp": 1781989037760.0
+    },
+    "color": {
+      "background": "#0d9488",
+      "border": "#99f6e4",
+      "highlight": {
+        "background": "#0f766e",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 160,
+    "label": "time_series",
+    "type": "Domain",
+    "properties": {},
+    "color": {
+      "background": "#f43f5e",
+      "border": "#fda4af",
+      "highlight": {
+        "background": "#e11d48",
+        "border": "#ffffff"
+      }
+    },
+    "size": 35
+  },
+  {
+    "id": 161,
+    "label": "mlops",
+    "type": "Domain",
+    "properties": {},
+    "color": {
+      "background": "#f43f5e",
+      "border": "#fda4af",
+      "highlight": {
+        "background": "#e11d48",
+        "border": "#ffffff"
+      }
+    },
+    "size": 35
+  },
+  {
+    "id": 162,
+    "label": "data_engineering",
+    "type": "Domain",
+    "properties": {},
+    "color": {
+      "background": "#f43f5e",
+      "border": "#fda4af",
+      "highlight": {
+        "background": "#e11d48",
+        "border": "#ffffff"
+      }
+    },
+    "size": 35
+  },
+  {
+    "id": 163,
+    "label": "supervised_learning",
+    "type": "Domain",
+    "properties": {},
+    "color": {
+      "background": "#f43f5e",
+      "border": "#fda4af",
+      "highlight": {
+        "background": "#e11d48",
+        "border": "#ffffff"
+      }
+    },
+    "size": 35
+  },
+  {
+    "id": 164,
+    "label": "clustering",
+    "type": "Domain",
+    "properties": {},
+    "color": {
+      "background": "#f43f5e",
+      "border": "#fda4af",
+      "highlight": {
+        "background": "#e11d48",
+        "border": "#ffffff"
+      }
+    },
+    "size": 35
+  },
+  {
+    "id": 165,
+    "label": "agentic_ai",
+    "type": "Domain",
+    "properties": {},
+    "color": {
+      "background": "#f43f5e",
+      "border": "#fda4af",
+      "highlight": {
+        "background": "#e11d48",
+        "border": "#ffffff"
+      }
+    },
+    "size": 35
+  },
+  {
+    "id": 166,
+    "label": "dev_tools",
+    "type": "Domain",
+    "properties": {},
+    "color": {
+      "background": "#f43f5e",
+      "border": "#fda4af",
+      "highlight": {
+        "background": "#e11d48",
+        "border": "#ffffff"
+      }
+    },
+    "size": 35
+  },
+  {
+    "id": 167,
+    "label": "validation",
+    "type": "Domain",
+    "properties": {},
+    "color": {
+      "background": "#f43f5e",
+      "border": "#fda4af",
+      "highlight": {
+        "background": "#e11d48",
+        "border": "#ffffff"
+      }
+    },
+    "size": 35
+  },
+  {
+    "id": 168,
+    "label": "feature_engineering",
+    "type": "Domain",
+    "properties": {},
+    "color": {
+      "background": "#f43f5e",
+      "border": "#fda4af",
+      "highlight": {
+        "background": "#e11d48",
+        "border": "#ffffff"
+      }
+    },
+    "size": 35
+  },
+  {
+    "id": 169,
+    "label": "modeling",
+    "type": "Domain",
+    "properties": {},
+    "color": {
+      "background": "#f43f5e",
+      "border": "#fda4af",
+      "highlight": {
+        "background": "#e11d48",
+        "border": "#ffffff"
+      }
+    },
+    "size": 35
+  },
+  {
+    "id": 170,
+    "label": "finance",
+    "type": "Domain",
+    "properties": {},
+    "color": {
+      "background": "#f43f5e",
+      "border": "#fda4af",
+      "highlight": {
+        "background": "#e11d48",
+        "border": "#ffffff"
+      }
+    },
+    "size": 35
+  },
+  {
+    "id": 171,
+    "label": "ecommerce",
+    "type": "Domain",
+    "properties": {},
+    "color": {
+      "background": "#f43f5e",
+      "border": "#fda4af",
+      "highlight": {
+        "background": "#e11d48",
+        "border": "#ffffff"
+      }
+    },
+    "size": 35
+  },
+  {
+    "id": 172,
+    "label": "medical",
+    "type": "Domain",
+    "properties": {},
+    "color": {
+      "background": "#f43f5e",
+      "border": "#fda4af",
+      "highlight": {
+        "background": "#e11d48",
+        "border": "#ffffff"
+      }
+    },
+    "size": 35
+  },
+  {
+    "id": 173,
+    "label": "Stationnarite",
+    "type": "Concept",
+    "properties": {
+      "definition": "Propriete d'une serie temporelle dont les caracteristiques statistiques restent constantes.",
+      "category": "time_series"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 174,
+    "label": "Decomposition STL",
+    "type": "Concept",
+    "properties": {
+      "definition": "Methode de separation d'une serie temporelle en composants de tendance, saisonniers et residuels.",
+      "category": "time_series"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 175,
+    "label": "Concept Drift",
+    "type": "Concept",
+    "properties": {
+      "definition": "Changement imprevu des proprietes statistiques de la variable cible au fil du temps.",
+      "category": "mlops"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 176,
+    "label": "Lagged Features",
+    "type": "Concept",
+    "properties": {
+      "definition": "Variables creees en utilisant les valeurs passees d'une serie temporelle.",
+      "category": "time_series"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 177,
+    "label": "SplineTransformer",
+    "type": "Concept",
+    "properties": {
+      "definition": "Ingenierie de caracteristiques utilisant des fonctions splines pour modeliser des modeles cycliques.",
+      "category": "time_series"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 178,
+    "label": "TimeSeriesSplit",
+    "type": "Concept",
+    "properties": {
+      "definition": "Strategie de validation croisee par fenetre glissante respectant la chronologie.",
+      "category": "time_series"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 179,
+    "label": "Model Registry",
+    "type": "Concept",
+    "properties": {
+      "definition": "Referentiel centralise pour stocker, versionner et gerer le cycle de vie des modeles.",
+      "category": "mlops"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 180,
+    "label": "Feature Store",
+    "type": "Concept",
+    "properties": {
+      "definition": "Couche de gestion des donnees centralisant la definition et le stockage des caracteristiques ML.",
+      "category": "mlops"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 181,
+    "label": "Deploiement Canary",
+    "type": "Concept",
+    "properties": {
+      "definition": "Strategie de deploiement progressif ou une fraction du trafic est routee vers le nouveau modele.",
+      "category": "mlops"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 182,
+    "label": "Deploiement Blue-Green",
+    "type": "Concept",
+    "properties": {
+      "definition": "Modele s'appuyant sur deux environnements identiques permettant de basculer le trafic instantanement.",
+      "category": "mlops"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 183,
+    "label": "Winsorisation",
+    "type": "Concept",
+    "properties": {
+      "definition": "Transformation visant a limiter l'effet des valeurs aberrantes en plafonnant les extremums.",
+      "category": "data_engineering"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 184,
+    "label": "Retrieval-Augmented Generation (RAG)",
+    "type": "Concept",
+    "properties": {
+      "definition": "Architecture fournissant un contexte recupere via recherche vectorielle aux LLM.",
+      "category": "agentic_ai"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 185,
+    "label": "K-Means",
+    "type": "Concept",
+    "properties": {
+      "definition": "Algorithme de partitionnement non supervise regroupant les donnees autour de centroides.",
+      "category": "clustering"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 186,
+    "label": "Score de Silhouette",
+    "type": "Concept",
+    "properties": {
+      "definition": "Metrique evaluant la qualite du clustering en mesurant l'etancheite intra-cluster.",
+      "category": "clustering"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 187,
+    "label": "DBSCAN",
+    "type": "Concept",
+    "properties": {
+      "definition": "Algorithme de clustering spatial base sur la densite pour detecter des formes complexes.",
+      "category": "clustering"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 188,
+    "label": "UMAP",
+    "type": "Concept",
+    "properties": {
+      "definition": "Technique de reduction de dimensionnalite preservant les topologies locales et globales.",
+      "category": "clustering"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 189,
+    "label": "Stacking",
+    "type": "Concept",
+    "properties": {
+      "definition": "Methode d'apprentissage d'ensemble entrainant un meta-modele a partir de predictions d'autres modeles.",
+      "category": "supervised_learning"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 190,
+    "label": "Pseudo-etiquetage",
+    "type": "Concept",
+    "properties": {
+      "definition": "Technique semi-supervisee utilisant les predictions souples d'un modele initial.",
+      "category": "supervised_learning"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 191,
+    "label": "Isolation Forest",
+    "type": "Concept",
+    "properties": {
+      "definition": "Algorithme utilise pour la detection d'anomalies en isolant les valeurs atypiques.",
+      "category": "clustering"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 192,
+    "label": "PCA",
+    "type": "Concept",
+    "properties": {
+      "definition": "Technique de reduction dimensionnelle lineaire vers des directions de variance maximale.",
+      "category": "data_engineering"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 193,
+    "label": "Orchestration par graphes",
+    "type": "Concept",
+    "properties": {
+      "definition": "Modele controlant le flux d'agents via un graphe oriente explicite.",
+      "category": "agentic_ai"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 194,
+    "label": "Model Context Protocol (MCP)",
+    "type": "Concept",
+    "properties": {
+      "definition": "Standard de communication open-source pour l'integration securisee de donnees.",
+      "category": "agentic_ai"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 195,
+    "label": "Differencing",
+    "type": "Concept",
+    "properties": {
+      "definition": "Methode pour rendre une serie temporelle stationnaire en soustrayant des valeurs passees.",
+      "category": "time_series"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 196,
+    "label": "Data Validation",
+    "type": "Concept",
+    "properties": {
+      "definition": "Processus d'application de contrats de donnees pour eviter la corruption.",
+      "category": "data_engineering"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 197,
+    "label": "Environment Consistency",
+    "type": "Concept",
+    "properties": {
+      "definition": "Reproductibilite de l'environnement d'execution du developpement a la production.",
+      "category": "mlops"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 198,
+    "label": "Notebook-Driven Development (NDD)",
+    "type": "Concept",
+    "properties": {
+      "definition": "Methodologie pronant l'utilisation des notebooks comme composants de premiere classe.",
+      "category": "dev_tools"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 199,
+    "label": "End-to-End MLOps Pipeline",
+    "type": "Concept",
+    "properties": {
+      "definition": "Architecture complete automatisant le cycle de vie d'un modele ML.",
+      "category": "mlops"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 200,
+    "label": "Data Leakage",
+    "type": "Concept",
+    "properties": {
+      "definition": "Information du futur ou du test se retrouvant accidentellement dans le set d'entrainement.",
+      "category": "validation"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 201,
+    "label": "Cyclical Feature Encoding",
+    "type": "Concept",
+    "properties": {
+      "definition": "Transformation de caracteristiques temporelles via sinus et cosinus.",
+      "category": "feature_engineering"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 202,
+    "label": "Marketing Mix Modeling (MMM)",
+    "type": "Concept",
+    "properties": {
+      "definition": "Analyse quantifiant l'impact des canaux marketing sur les ventes via des modeles ML.",
+      "category": "modeling"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 203,
+    "label": "Architecture Agentique \u00e0 3 Couches",
+    "type": "Concept",
+    "properties": {
+      "definition": "Mod\u00e8le d'architecture d'entreprise divisant les syst\u00e8mes en Couche d'Orchestration, Cognitive et Outils.",
+      "category": "agentic_ai"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 204,
+    "label": "Soci\u00e9t\u00e9 d'Agents",
+    "type": "Concept",
+    "properties": {
+      "definition": "R\u00e9seau d'agents hautement sp\u00e9cialis\u00e9s coordonn\u00e9s par un orchestrateur.",
+      "category": "agentic_ai"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 205,
+    "label": "Agentic TCO",
+    "type": "Concept",
+    "properties": {
+      "definition": "\u00c9valuation du Co\u00fbt Total de Possession incluant l'inf\u00e9rence continue et la valeur compos\u00e9e.",
+      "category": "mlops"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 206,
+    "label": "MLflow",
+    "type": "Tool",
+    "properties": {
+      "definition": "Plateforme open-source standardisant la gestion du cycle de vie des modeles.",
+      "category": "mlops"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 207,
+    "label": "DVC",
+    "type": "Tool",
+    "properties": {
+      "definition": "Systeme de controle de version pour gerer les grands ensembles de donnees et modeles ML.",
+      "category": "mlops"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 208,
+    "label": "Feast",
+    "type": "Tool",
+    "properties": {
+      "definition": "Magasin de caracteristiques open source garantissant la coherence hors-ligne et en ligne.",
+      "category": "mlops"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 209,
+    "label": "Docker",
+    "type": "Tool",
+    "properties": {
+      "definition": "Plateforme de conteneurisation assurant la consistance environnementale.",
+      "category": "mlops"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 210,
+    "label": "FastAPI",
+    "type": "Tool",
+    "properties": {
+      "definition": "Framework Python asynchrone pour exposer les modeles ML via des API RESTful.",
+      "category": "mlops"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 211,
+    "label": "Seldon Core",
+    "type": "Tool",
+    "properties": {
+      "definition": "Plateforme Kubernetes native pour le deploiement de modeles ML a grande echelle.",
+      "category": "mlops"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 212,
+    "label": "Papermill",
+    "type": "Tool",
+    "properties": {
+      "definition": "Outil pour executer et parametrer des notebooks Jupyter comme des jobs automatises.",
+      "category": "data_engineering"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 213,
+    "label": "Jupytext",
+    "type": "Tool",
+    "properties": {
+      "definition": "Outil synchronisant les notebooks avec des scripts de texte pur pour le versionnement.",
+      "category": "data_engineering"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 214,
+    "label": "Marimo",
+    "type": "Tool",
+    "properties": {
+      "definition": "Environnement de notebook Python reactif et reproductible sans etat cache.",
+      "category": "data_engineering"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 215,
+    "label": "Quarto",
+    "type": "Tool",
+    "properties": {
+      "definition": "Systeme de publication scientifique multi-langages base sur Pandoc.",
+      "category": "data_engineering"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 216,
+    "label": "Apache Airflow",
+    "type": "Tool",
+    "properties": {
+      "definition": "Plateforme pour definir, planifier et monitorer des workflows et pipelines.",
+      "category": "data_engineering"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 217,
+    "label": "dbt",
+    "type": "Tool",
+    "properties": {
+      "definition": "Framework de transformation de donnees appliquant des principes d'ingenierie logicielle au SQL.",
+      "category": "data_engineering"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 218,
+    "label": "Polars",
+    "type": "Tool",
+    "properties": {
+      "definition": "Bibliotheque DataFrame optimisee pour un traitement ultra-rapide et multi-thread.",
+      "category": "data_engineering"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 219,
+    "label": "Pandera",
+    "type": "Tool",
+    "properties": {
+      "definition": "Bibliotheque de validation de donnees orientee schemas pour DataFrames.",
+      "category": "data_engineering"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 220,
+    "label": "Great Expectations",
+    "type": "Tool",
+    "properties": {
+      "definition": "Framework declaratif pour valider, tester et documenter la qualite des donnees.",
+      "category": "data_engineering"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 221,
+    "label": "pointblank",
+    "type": "Tool",
+    "properties": {
+      "definition": "Package pour comprendre et valider la qualite des donnees tabulaires.",
+      "category": "data_engineering"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 222,
+    "label": "XGBoost",
+    "type": "Tool",
+    "properties": {
+      "definition": "Implementation d'arbres de decision a gradient booste hautement optimisee.",
+      "category": "supervised_learning"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 223,
+    "label": "Optuna",
+    "type": "Tool",
+    "properties": {
+      "definition": "Framework d'optimisation automatique des hyperparametres avec elagage dynamique.",
+      "category": "supervised_learning"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 224,
+    "label": "LangGraph",
+    "type": "Tool",
+    "properties": {
+      "definition": "Framework orchestrant des workflows agentiques complexes et controlables via DAG.",
+      "category": "agentic_ai"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 225,
+    "label": "CrewAI",
+    "type": "Tool",
+    "properties": {
+      "definition": "Framework facilitant la creation de systemes multi-agents attribuant des roles specifiques.",
+      "category": "agentic_ai"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 226,
+    "label": "AutoGen",
+    "type": "Tool",
+    "properties": {
+      "definition": "Framework base sur un modele de conversation multi-agents pilote par les evenements.",
+      "category": "agentic_ai"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 227,
+    "label": "Semantic Kernel",
+    "type": "Tool",
+    "properties": {
+      "definition": "SDK d'orchestration enterprise integrant les capacites des LLMs aux applications existantes.",
+      "category": "agentic_ai"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 228,
+    "label": "Haystack",
+    "type": "Tool",
+    "properties": {
+      "definition": "Framework oriente pipeline specialise dans le RAG natif et le traitement NLP.",
+      "category": "agentic_ai"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 229,
+    "label": "Smolagents",
+    "type": "Tool",
+    "properties": {
+      "definition": "Framework minimaliste utilisant des LLMs pour generer et executer dynamiquement du code.",
+      "category": "agentic_ai"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 230,
+    "label": "Mastra",
+    "type": "Tool",
+    "properties": {
+      "definition": "Framework TypeScript-first integrant des workflows en graphe et un routage multi-agents.",
+      "category": "agentic_ai"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 231,
+    "label": "Detect and Achieve Stationarity",
+    "type": "Procedure",
+    "properties": {
+      "domain": "time_series",
+      "objective": "Transformer une serie non-stationnaire en stationnaire pour la modelisation"
+    },
+    "color": {
+      "background": "#f59e0b",
+      "border": "#fde047",
+      "highlight": {
+        "background": "#d97706",
+        "border": "#ffffff"
+      }
+    },
+    "size": 24
+  },
+  {
+    "id": 232,
+    "label": "Node_232",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "plot_acf(df['value'])",
+      "action": "Visualiser l'autocorrelation (ACF/PACF)",
+      "order": 1
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 233,
+    "label": "Node_233",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "adfuller(df['value'])",
+      "action": "Effectuer tests ADF/KPSS",
+      "order": 2
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 234,
+    "label": "Node_234",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "df['value'].diff()",
+      "action": "Appliquer la differenciation",
+      "order": 3
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 235,
+    "label": "Setup MLflow Tracking Server",
+    "type": "Procedure",
+    "properties": {
+      "domain": "mlops",
+      "objective": "Configurer un serveur MLflow avec Model Registry"
+    },
+    "color": {
+      "background": "#f59e0b",
+      "border": "#fde047",
+      "highlight": {
+        "background": "#d97706",
+        "border": "#ffffff"
+      }
+    },
+    "size": 24
+  },
+  {
+    "id": 236,
+    "label": "Node_236",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "mlflow server --backend-store-uri sqlite:///mlflow.db",
+      "action": "Demarrer serveur avec backend DB",
+      "order": 1
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 237,
+    "label": "Node_237",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "mlflow.log_param('param', 1)",
+      "action": "Logger parametres et modele",
+      "order": 2
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 238,
+    "label": "Node_238",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "client.set_registered_model_alias('Model', 'champion', 1)",
+      "action": "Enregistrer modele avec alias",
+      "order": 3
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 239,
+    "label": "Setup Data Validation with Pandera",
+    "type": "Procedure",
+    "properties": {
+      "domain": "data_engineering",
+      "objective": "Definir et appliquer des schemas sur DataFrames"
+    },
+    "color": {
+      "background": "#f59e0b",
+      "border": "#fde047",
+      "highlight": {
+        "background": "#d97706",
+        "border": "#ffffff"
+      }
+    },
+    "size": 24
+  },
+  {
+    "id": 240,
+    "label": "Node_240",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "class Schema(pa.DataFrameModel): ...",
+      "action": "Definir un schema base sur les classes",
+      "order": 1
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 241,
+    "label": "Node_241",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "@pa.check_types def process(): ...",
+      "action": "Integrer dans Pytest",
+      "order": 2
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 242,
+    "label": "Node_242",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "Schema.validate(df, lazy=True)",
+      "action": "Valider paresseusement en production",
+      "order": 3
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 243,
+    "label": "Build Stateful Agent Workflow",
+    "type": "Procedure",
+    "properties": {
+      "domain": "agentic_ai",
+      "objective": "Orchestrer un workflow avec LangGraph"
+    },
+    "color": {
+      "background": "#f59e0b",
+      "border": "#fde047",
+      "highlight": {
+        "background": "#d97706",
+        "border": "#ffffff"
+      }
+    },
+    "size": 24
+  },
+  {
+    "id": 244,
+    "label": "Node_244",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "workflow = StateGraph(State)",
+      "action": "Definir le graphe d'etats",
+      "order": 1
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 245,
+    "label": "Node_245",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "workflow.add_conditional_edges(...)",
+      "action": "Configurer routage conditionnel",
+      "order": 2
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 246,
+    "label": "Node_246",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "app = workflow.compile(checkpointer=memory)",
+      "action": "Ajouter controle humain",
+      "order": 3
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 247,
+    "label": "Optimal K-Means Clustering",
+    "type": "Procedure",
+    "properties": {
+      "domain": "clustering",
+      "objective": "Determiner le nombre optimal de clusters"
+    },
+    "color": {
+      "background": "#f59e0b",
+      "border": "#fde047",
+      "highlight": {
+        "background": "#d97706",
+        "border": "#ffffff"
+      }
+    },
+    "size": 24
+  },
+  {
+    "id": 248,
+    "label": "Node_248",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "scaler.fit_transform(X)",
+      "action": "Normaliser les donnees",
+      "order": 1
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 249,
+    "label": "Node_249",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "KMeans(n_clusters=k).fit(X)",
+      "action": "Tester differents k",
+      "order": 2
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 250,
+    "label": "Node_250",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "silhouette_score(X, labels)",
+      "action": "Calculer Silhouette Score",
+      "order": 3
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 251,
+    "label": "Implement Stacking Ensemble",
+    "type": "Procedure",
+    "properties": {
+      "domain": "supervised_learning",
+      "objective": "Combiner plusieurs modeles via un meta-modele"
+    },
+    "color": {
+      "background": "#f59e0b",
+      "border": "#fde047",
+      "highlight": {
+        "background": "#d97706",
+        "border": "#ffffff"
+      }
+    },
+    "size": 24
+  },
+  {
+    "id": 252,
+    "label": "Node_252",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "cross_val_predict(model, X, y)",
+      "action": "Entrainer modeles de base",
+      "order": 1
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 253,
+    "label": "Node_253",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "np.column_stack(preds)",
+      "action": "Generer OOF features",
+      "order": 2
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 254,
+    "label": "Node_254",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "meta_model.fit(meta_features, y)",
+      "action": "Entrainer meta-modele",
+      "order": 3
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 255,
+    "label": "Node_255",
+    "type": "DecisionTree",
+    "properties": {
+      "question": "Quel modele pour une serie temporelle ?",
+      "context": "time_series",
+      "id": "ts-model-selection"
+    },
+    "color": {
+      "background": "#8b5cf6",
+      "border": "#c4b5fd",
+      "highlight": {
+        "background": "#7c3aed",
+        "border": "#ffffff"
+      }
+    },
+    "size": 24
+  },
+  {
+    "id": 256,
+    "label": "Node_256",
+    "type": "DecisionBranch",
+    "properties": {
+      "condition": "Serie propre sans complexite",
+      "confidence": 0.9,
+      "action": "Utiliser modeles classiques (ARIMA)",
+      "order": 1
+    },
+    "color": {
+      "background": "#eab308",
+      "border": "#fef08a",
+      "highlight": {
+        "background": "#ca8a04",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 257,
+    "label": "Node_257",
+    "type": "DecisionBranch",
+    "properties": {
+      "condition": "Non-linearites et caracteristiques riches",
+      "confidence": 0.85,
+      "action": "Utiliser ML base sur les arbres (XGBoost)",
+      "order": 2
+    },
+    "color": {
+      "background": "#eab308",
+      "border": "#fef08a",
+      "highlight": {
+        "background": "#ca8a04",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 258,
+    "label": "Node_258",
+    "type": "DecisionTree",
+    "properties": {
+      "question": "Quel framework d'agents IA choisir ?",
+      "context": "agentic_ai",
+      "id": "agentic-framework-selection"
+    },
+    "color": {
+      "background": "#8b5cf6",
+      "border": "#c4b5fd",
+      "highlight": {
+        "background": "#7c3aed",
+        "border": "#ffffff"
+      }
+    },
+    "size": 24
+  },
+  {
+    "id": 259,
+    "label": "Node_259",
+    "type": "DecisionBranch",
+    "properties": {
+      "condition": "Controle d'etat et validation humaine",
+      "confidence": 0.95,
+      "action": "Utiliser LangGraph",
+      "order": 1
+    },
+    "color": {
+      "background": "#eab308",
+      "border": "#fef08a",
+      "highlight": {
+        "background": "#ca8a04",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 260,
+    "label": "Node_260",
+    "type": "DecisionBranch",
+    "properties": {
+      "condition": "Workflows business et roles",
+      "confidence": 0.85,
+      "action": "Utiliser CrewAI",
+      "order": 2
+    },
+    "color": {
+      "background": "#eab308",
+      "border": "#fef08a",
+      "highlight": {
+        "background": "#ca8a04",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 261,
+    "label": "Node_261",
+    "type": "DecisionBranch",
+    "properties": {
+      "condition": "Extraction de documents et RAG",
+      "confidence": 0.9,
+      "action": "Utiliser Haystack",
+      "order": 3
+    },
+    "color": {
+      "background": "#eab308",
+      "border": "#fef08a",
+      "highlight": {
+        "background": "#ca8a04",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 262,
+    "label": "Node_262",
+    "type": "DecisionTree",
+    "properties": {
+      "question": "Services Cloud Manages ou Open-Source heberge ?",
+      "context": "mlops",
+      "id": "mlops-infrastructure"
+    },
+    "color": {
+      "background": "#8b5cf6",
+      "border": "#c4b5fd",
+      "highlight": {
+        "background": "#7c3aed",
+        "border": "#ffffff"
+      }
+    },
+    "size": 24
+  },
+  {
+    "id": 263,
+    "label": "Node_263",
+    "type": "DecisionBranch",
+    "properties": {
+      "condition": "Equipe novice et besoin de rapidite",
+      "confidence": 0.9,
+      "action": "AWS SageMaker, Azure ML",
+      "order": 1
+    },
+    "color": {
+      "background": "#eab308",
+      "border": "#fef08a",
+      "highlight": {
+        "background": "#ca8a04",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 264,
+    "label": "Node_264",
+    "type": "DecisionBranch",
+    "properties": {
+      "condition": "Refus du vendor lock-in et maturite",
+      "confidence": 0.95,
+      "action": "Kubeflow, MLflow local",
+      "order": 2
+    },
+    "color": {
+      "background": "#eab308",
+      "border": "#fef08a",
+      "highlight": {
+        "background": "#ca8a04",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 265,
+    "label": "Node_265",
+    "type": "DecisionTree",
+    "properties": {
+      "question": "Quel algorithme de clustering utiliser ?",
+      "context": "clustering",
+      "id": "clustering-selection"
+    },
+    "color": {
+      "background": "#8b5cf6",
+      "border": "#c4b5fd",
+      "highlight": {
+        "background": "#7c3aed",
+        "border": "#ffffff"
+      }
+    },
+    "size": 24
+  },
+  {
+    "id": 266,
+    "label": "Node_266",
+    "type": "DecisionBranch",
+    "properties": {
+      "condition": "Clusters spheriques et de tailles egales",
+      "confidence": 0.95,
+      "action": "Utiliser K-Means",
+      "order": 1
+    },
+    "color": {
+      "background": "#eab308",
+      "border": "#fef08a",
+      "highlight": {
+        "background": "#ca8a04",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 267,
+    "label": "Node_267",
+    "type": "DecisionBranch",
+    "properties": {
+      "condition": "Formes arbitraires ou presence d'outliers",
+      "confidence": 0.9,
+      "action": "Utiliser DBSCAN",
+      "order": 2
+    },
+    "color": {
+      "background": "#eab308",
+      "border": "#fef08a",
+      "highlight": {
+        "background": "#ca8a04",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 268,
+    "label": "Node_268",
+    "type": "DecisionTree",
+    "properties": {
+      "question": "Notebook Jupyter ou Script Python ?",
+      "context": "data_engineering",
+      "id": "notebook-vs-script"
+    },
+    "color": {
+      "background": "#8b5cf6",
+      "border": "#c4b5fd",
+      "highlight": {
+        "background": "#7c3aed",
+        "border": "#ffffff"
+      }
+    },
+    "size": 24
+  },
+  {
+    "id": 269,
+    "label": "Node_269",
+    "type": "DecisionBranch",
+    "properties": {
+      "condition": "Exploration, EDA et prototypage",
+      "confidence": 0.9,
+      "action": "Utiliser Jupyter Notebooks",
+      "order": 1
+    },
+    "color": {
+      "background": "#eab308",
+      "border": "#fef08a",
+      "highlight": {
+        "background": "#ca8a04",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 270,
+    "label": "Node_270",
+    "type": "DecisionBranch",
+    "properties": {
+      "condition": "Environnement de production",
+      "confidence": 0.95,
+      "action": "Utiliser scripts .py",
+      "order": 2
+    },
+    "color": {
+      "background": "#eab308",
+      "border": "#fef08a",
+      "highlight": {
+        "background": "#ca8a04",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 271,
+    "label": "Node_271",
+    "type": "DecisionTree",
+    "properties": {
+      "question": "Quel niveau d'intervention humaine est requis pour cette action de l'agent ?",
+      "context": "agentic_ai",
+      "id": "agentic-human-supervision"
+    },
+    "color": {
+      "background": "#8b5cf6",
+      "border": "#c4b5fd",
+      "highlight": {
+        "background": "#7c3aed",
+        "border": "#ffffff"
+      }
+    },
+    "size": 24
+  },
+  {
+    "id": 272,
+    "label": "Node_272",
+    "type": "DecisionBranch",
+    "properties": {
+      "condition": "Action automatis\u00e9e \u00e0 faible risque et r\u00e9versible",
+      "confidence": 0.95,
+      "action": "Niveau 1 : Ex\u00e9cution automatis\u00e9e",
+      "order": 1
+    },
+    "color": {
+      "background": "#eab308",
+      "border": "#fef08a",
+      "highlight": {
+        "background": "#ca8a04",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 273,
+    "label": "Node_273",
+    "type": "DecisionBranch",
+    "properties": {
+      "condition": "Action mod\u00e9r\u00e9e n\u00e9cessitant un contr\u00f4le qualit\u00e9",
+      "confidence": 0.9,
+      "action": "Niveau 2 : Supervision avec fen\u00eatre de r\u00e9vision",
+      "order": 2
+    },
+    "color": {
+      "background": "#eab308",
+      "border": "#fef08a",
+      "highlight": {
+        "background": "#ca8a04",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 274,
+    "label": "Node_274",
+    "type": "DecisionBranch",
+    "properties": {
+      "condition": "Action irr\u00e9versible ou \u00e0 forts enjeux",
+      "confidence": 0.99,
+      "action": "Niveau 3 : Approbation stricte obligatoire",
+      "order": 3
+    },
+    "color": {
+      "background": "#eab308",
+      "border": "#fef08a",
+      "highlight": {
+        "background": "#ca8a04",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 275,
+    "label": "Credit Scoring",
+    "type": "Concept",
+    "properties": {
+      "definition": "\u00c9valuation du risque de d\u00e9faut d'un emprunteur",
+      "category": "finance"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 276,
+    "label": "Look-Ahead Bias",
+    "type": "Concept",
+    "properties": {
+      "definition": "Biais d'utilisation d'informations futures non disponibles au moment de la pr\u00e9diction",
+      "category": "finance"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 277,
+    "label": "Sharpe Ratio",
+    "type": "Concept",
+    "properties": {
+      "definition": "Mesure de la rentabilit\u00e9 d'un actif par rapport \u00e0 sa volatilit\u00e9",
+      "category": "finance"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 278,
+    "label": "SHAP",
+    "type": "Tool",
+    "properties": {
+      "definition": "Outil d'explicabilit\u00e9 bas\u00e9 sur la th\u00e9orie des jeux pour attribuer des importances aux features.",
+      "category": "supervised_learning"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 279,
+    "label": "Train Interpretable Credit Scorecard",
+    "type": "Procedure",
+    "properties": {
+      "domain": "finance",
+      "objective": "Cr\u00e9er une grille de scoring interpr\u00e9table pour l'octroi de cr\u00e9dit"
+    },
+    "color": {
+      "background": "#f59e0b",
+      "border": "#fde047",
+      "highlight": {
+        "background": "#d97706",
+        "border": "#ffffff"
+      }
+    },
+    "size": 24
+  },
+  {
+    "id": 280,
+    "label": "Node_280",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "df_clean = df.dropna()",
+      "action": "Nettoyer les variables financi\u00e8res",
+      "order": 1
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 281,
+    "label": "Node_281",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "model = LogisticRegression().fit(X, y)",
+      "action": "Appliquer une R\u00e9gression Logistique",
+      "order": 2
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 282,
+    "label": "Node_282",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "coefficients = model.coef_",
+      "action": "Extraire les coefficients et les traduire en grille de points score",
+      "order": 3
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 283,
+    "label": "Stationnariser serie financiere",
+    "type": "Procedure",
+    "properties": {
+      "domain": "finance",
+      "objective": "Retirer la non-stationnarit\u00e9 d'une s\u00e9rie temporelle financi\u00e8re"
+    },
+    "color": {
+      "background": "#f59e0b",
+      "border": "#fde047",
+      "highlight": {
+        "background": "#d97706",
+        "border": "#ffffff"
+      }
+    },
+    "size": 24
+  },
+  {
+    "id": 284,
+    "label": "Node_284",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "adfuller(df['price'])",
+      "action": "Appliquer le test ADF",
+      "order": 1
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 285,
+    "label": "Node_285",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "df['returns'] = np.log(df['price']).diff()",
+      "action": "Si non stationnaire, calculer les rendements log",
+      "order": 2
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 286,
+    "label": "Node_286",
+    "type": "DecisionTree",
+    "properties": {
+      "question": "Comment mod\u00e9liser le risque financier ?",
+      "context": "finance",
+      "id": "finance-model-selection"
+    },
+    "color": {
+      "background": "#8b5cf6",
+      "border": "#c4b5fd",
+      "highlight": {
+        "background": "#7c3aed",
+        "border": "#ffffff"
+      }
+    },
+    "size": 24
+  },
+  {
+    "id": 287,
+    "label": "Node_287",
+    "type": "DecisionBranch",
+    "properties": {
+      "condition": "R\u00e9glementation stricte demandant explications simples",
+      "confidence": 0.95,
+      "action": "Utiliser R\u00e9gression Logistique avec Scorecard",
+      "order": 1
+    },
+    "color": {
+      "background": "#eab308",
+      "border": "#fef08a",
+      "highlight": {
+        "background": "#ca8a04",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 288,
+    "label": "Node_288",
+    "type": "DecisionBranch",
+    "properties": {
+      "condition": "Performance maximale avec explication locale via attribution",
+      "confidence": 0.9,
+      "action": "Utiliser XGBoost + SHAP",
+      "order": 2
+    },
+    "color": {
+      "background": "#eab308",
+      "border": "#fef08a",
+      "highlight": {
+        "background": "#ca8a04",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 289,
+    "label": "statsmodels",
+    "type": "Tool",
+    "properties": {
+      "category": "time_series"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 290,
+    "label": "Mod\u00e8le RFM",
+    "type": "Concept",
+    "properties": {
+      "definition": "Segmentation bas\u00e9e sur la R\u00e9cence, Fr\u00e9quence et Montant d'achat",
+      "category": "ecommerce"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 291,
+    "label": "Churn Client",
+    "type": "Concept",
+    "properties": {
+      "definition": "Pr\u00e9diction du taux d'attrition des utilisateurs",
+      "category": "ecommerce"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 292,
+    "label": "Segmenter avec le modele RFM",
+    "type": "Procedure",
+    "properties": {
+      "domain": "ecommerce",
+      "objective": "Segmenter les clients d'une boutique en ligne"
+    },
+    "color": {
+      "background": "#f59e0b",
+      "border": "#fde047",
+      "highlight": {
+        "background": "#d97706",
+        "border": "#ffffff"
+      }
+    },
+    "size": 24
+  },
+  {
+    "id": 293,
+    "label": "Node_293",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "rfm = df.groupby('CustomerID').agg(...)",
+      "action": "Calculer Recency, Frequency et Monetary par client",
+      "order": 1
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 294,
+    "label": "Node_294",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "StandardScaler().fit_transform(rfm)",
+      "action": "Normaliser les colonnes",
+      "order": 2
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 295,
+    "label": "Node_295",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "KMeans(n_clusters=4).fit(rfm_scaled)",
+      "action": "Appliquer KMeans pour segmenter",
+      "order": 3
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 296,
+    "label": "Entrainer un modele de Churn",
+    "type": "Procedure",
+    "properties": {
+      "domain": "ecommerce",
+      "objective": "Pr\u00e9dire le d\u00e9part des utilisateurs"
+    },
+    "color": {
+      "background": "#f59e0b",
+      "border": "#fde047",
+      "highlight": {
+        "background": "#d97706",
+        "border": "#ffffff"
+      }
+    },
+    "size": 24
+  },
+  {
+    "id": 297,
+    "label": "Node_297",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "df['churn'] = (df['days_inactive'] > 90).astype(int)",
+      "action": "D\u00e9finir la p\u00e9riode d'inactivit\u00e9",
+      "order": 1
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 298,
+    "label": "Node_298",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "scale_pos_weight = count_neg / count_pos",
+      "action": "G\u00e9rer le d\u00e9s\u00e9quilibre des classes",
+      "order": 2
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 299,
+    "label": "Node_299",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "XGBClassifier().fit(X, y)",
+      "action": "Entra\u00eener un classifieur de type Gradient Boosting",
+      "order": 3
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 300,
+    "label": "Node_300",
+    "type": "DecisionTree",
+    "properties": {
+      "question": "Comment optimiser les prix en E-commerce ?",
+      "context": "ecommerce",
+      "id": "ecommerce-pricing-strategy"
+    },
+    "color": {
+      "background": "#8b5cf6",
+      "border": "#c4b5fd",
+      "highlight": {
+        "background": "#7c3aed",
+        "border": "#ffffff"
+      }
+    },
+    "size": 24
+  },
+  {
+    "id": 301,
+    "label": "Node_301",
+    "type": "DecisionBranch",
+    "properties": {
+      "condition": "Faible historique ou nouveaut\u00e9s",
+      "confidence": 0.8,
+      "action": "R\u00e8gles expertes m\u00e9tier bas\u00e9es sur les co\u00fbts",
+      "order": 1
+    },
+    "color": {
+      "background": "#eab308",
+      "border": "#fef08a",
+      "highlight": {
+        "background": "#ca8a04",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 302,
+    "label": "Node_302",
+    "type": "DecisionBranch",
+    "properties": {
+      "condition": "Historique transactionnel complet",
+      "confidence": 0.9,
+      "action": "Estimer l'\u00e9lasticit\u00e9-prix de la demande par r\u00e9gression log-log",
+      "order": 2
+    },
+    "color": {
+      "background": "#eab308",
+      "border": "#fef08a",
+      "highlight": {
+        "background": "#ca8a04",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 303,
+    "label": "scikit-learn",
+    "type": "Tool",
+    "properties": {
+      "category": "supervised_learning"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 304,
+    "label": "Donn\u00e9es censur\u00e9es",
+    "type": "Concept",
+    "properties": {
+      "definition": "Donn\u00e9es o\u00f9 l'\u00e9v\u00e9nement d'int\u00e9r\u00eat (ex: d\u00e9c\u00e8s, r\u00e9cidive) n'a pas \u00e9t\u00e9 observ\u00e9 pendant l'\u00e9tude",
+      "category": "medical"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 305,
+    "label": "Recall M\u00e9dical",
+    "type": "Concept",
+    "properties": {
+      "definition": "Priorit\u00e9 clinique donn\u00e9e au fait de ne rater aucun malade (minimiser les faux n\u00e9gatifs)",
+      "category": "medical"
+    },
+    "color": {
+      "background": "#06b6d4",
+      "border": "#67e8f9",
+      "highlight": {
+        "background": "#0891b2",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 306,
+    "label": "lifelines",
+    "type": "Tool",
+    "properties": {
+      "definition": "Biblioth\u00e8que Python pour l'analyse de survie et les mod\u00e8les de risques proportionnels de Cox.",
+      "category": "survival"
+    },
+    "color": {
+      "background": "#10b981",
+      "border": "#6ee7b7",
+      "highlight": {
+        "background": "#059669",
+        "border": "#ffffff"
+      }
+    },
+    "size": 16
+  },
+  {
+    "id": 307,
+    "label": "Kaplan-Meier Survival Estimation",
+    "type": "Procedure",
+    "properties": {
+      "domain": "medical",
+      "objective": "Estimer la fonction de survie sur des donn\u00e9es censur\u00e9es"
+    },
+    "color": {
+      "background": "#f59e0b",
+      "border": "#fde047",
+      "highlight": {
+        "background": "#d97706",
+        "border": "#ffffff"
+      }
+    },
+    "size": 24
+  },
+  {
+    "id": 308,
+    "label": "Node_308",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "T = df['time']; E = df['event']",
+      "action": "Charger donn\u00e9es avec colonnes Temps et \u00c9v\u00e9nement",
+      "order": 1
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 309,
+    "label": "Node_309",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "kmf = KaplanMeierFitter()",
+      "action": "Instancier KaplanMeierFitter",
+      "order": 2
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 310,
+    "label": "Node_310",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "kmf.fit(T, E).plot_survival_function()",
+      "action": "Ajuster et tracer la courbe de survie",
+      "order": 3
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 311,
+    "label": "Ajuster un modele de Cox",
+    "type": "Procedure",
+    "properties": {
+      "domain": "medical",
+      "objective": "Ajuster un mod\u00e8le de r\u00e9gression de Cox pour l'analyse de survie"
+    },
+    "color": {
+      "background": "#f59e0b",
+      "border": "#fde047",
+      "highlight": {
+        "background": "#d97706",
+        "border": "#ffffff"
+      }
+    },
+    "size": 24
+  },
+  {
+    "id": 312,
+    "label": "Node_312",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "pd.get_dummies(df)",
+      "action": "Encoder les variables cat\u00e9gorielles",
+      "order": 1
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 313,
+    "label": "Node_313",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "cph = CoxPHFitter()",
+      "action": "Instancier CoxPHFitter",
+      "order": 2
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 314,
+    "label": "Node_314",
+    "type": "Step",
+    "properties": {
+      "code_snippet": "cph.fit(df, duration_col='T', event_col='E')",
+      "action": "Ajuster et analyser les hazard ratios",
+      "order": 3
+    },
+    "color": {
+      "background": "#64748b",
+      "border": "#cbd5e1",
+      "highlight": {
+        "background": "#475569",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 315,
+    "label": "Node_315",
+    "type": "DecisionTree",
+    "properties": {
+      "question": "Quelle m\u00e9trique de performance pour le diagnostic m\u00e9dical ?",
+      "context": "medical",
+      "id": "medical-metric-selection"
+    },
+    "color": {
+      "background": "#8b5cf6",
+      "border": "#c4b5fd",
+      "highlight": {
+        "background": "#7c3aed",
+        "border": "#ffffff"
+      }
+    },
+    "size": 24
+  },
+  {
+    "id": 316,
+    "label": "Node_316",
+    "type": "DecisionBranch",
+    "properties": {
+      "condition": "Maladie grave (taux de survie li\u00e9 \u00e0 la d\u00e9tection)",
+      "confidence": 0.95,
+      "action": "Maximiser le Recall / Sensibilit\u00e9",
+      "order": 1
+    },
+    "color": {
+      "background": "#eab308",
+      "border": "#fef08a",
+      "highlight": {
+        "background": "#ca8a04",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  },
+  {
+    "id": 317,
+    "label": "Node_317",
+    "type": "DecisionBranch",
+    "properties": {
+      "condition": "Diagnostic screening global",
+      "confidence": 0.9,
+      "action": "Optimiser ROC-AUC ou F1-weighted",
+      "order": 2
+    },
+    "color": {
+      "background": "#eab308",
+      "border": "#fef08a",
+      "highlight": {
+        "background": "#ca8a04",
+        "border": "#ffffff"
+      }
+    },
+    "size": 10
+  }
+];
+        const rawEdges = [
+  {
+    "from": 0,
+    "to": 170,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_0"
+  },
+  {
+    "from": 0,
+    "to": 2,
+    "label": "HAS_RUN",
+    "properties": {},
+    "id": "edge_1"
+  },
+  {
+    "from": 2,
+    "to": 1,
+    "label": "CHAMPION_MODEL",
+    "properties": {},
+    "id": "edge_2"
+  },
+  {
+    "from": 289,
+    "to": 160,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_3"
+  },
+  {
+    "from": 278,
+    "to": 163,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_4"
+  },
+  {
+    "from": 303,
+    "to": 163,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_5"
+  },
+  {
+    "from": 3,
+    "to": 7,
+    "label": "RECOMMENDS_ACTION",
+    "properties": {},
+    "id": "edge_6"
+  },
+  {
+    "from": 4,
+    "to": 8,
+    "label": "RECOMMENDS_ACTION",
+    "properties": {},
+    "id": "edge_7"
+  },
+  {
+    "from": 5,
+    "to": 9,
+    "label": "RECOMMENDS_ACTION",
+    "properties": {},
+    "id": "edge_8"
+  },
+  {
+    "from": 6,
+    "to": 10,
+    "label": "RECOMMENDS_ACTION",
+    "properties": {},
+    "id": "edge_9"
+  },
+  {
+    "from": 11,
+    "to": 12,
+    "label": "MAPS_TO",
+    "properties": {},
+    "id": "edge_10"
+  },
+  {
+    "from": 13,
+    "to": 12,
+    "label": "MAPS_TO",
+    "properties": {},
+    "id": "edge_11"
+  },
+  {
+    "from": 14,
+    "to": 12,
+    "label": "MAPS_TO",
+    "properties": {},
+    "id": "edge_12"
+  },
+  {
+    "from": 15,
+    "to": 16,
+    "label": "MAPS_TO",
+    "properties": {},
+    "id": "edge_13"
+  },
+  {
+    "from": 17,
+    "to": 16,
+    "label": "MAPS_TO",
+    "properties": {},
+    "id": "edge_14"
+  },
+  {
+    "from": 18,
+    "to": 19,
+    "label": "MAPS_TO",
+    "properties": {},
+    "id": "edge_15"
+  },
+  {
+    "from": 20,
+    "to": 19,
+    "label": "MAPS_TO",
+    "properties": {},
+    "id": "edge_16"
+  },
+  {
+    "from": 26,
+    "to": 160,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_17"
+  },
+  {
+    "from": 26,
+    "to": 28,
+    "label": "HAS_RUN",
+    "properties": {},
+    "id": "edge_18"
+  },
+  {
+    "from": 28,
+    "to": 27,
+    "label": "CHAMPION_MODEL",
+    "properties": {},
+    "id": "edge_19"
+  },
+  {
+    "from": 29,
+    "to": 171,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_20"
+  },
+  {
+    "from": 29,
+    "to": 31,
+    "label": "HAS_RUN",
+    "properties": {},
+    "id": "edge_21"
+  },
+  {
+    "from": 31,
+    "to": 30,
+    "label": "CHAMPION_MODEL",
+    "properties": {},
+    "id": "edge_22"
+  },
+  {
+    "from": 32,
+    "to": 172,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_23"
+  },
+  {
+    "from": 32,
+    "to": 34,
+    "label": "HAS_RUN",
+    "properties": {},
+    "id": "edge_24"
+  },
+  {
+    "from": 34,
+    "to": 33,
+    "label": "CHAMPION_MODEL",
+    "properties": {},
+    "id": "edge_25"
+  },
+  {
+    "from": 35,
+    "to": 36,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_26"
+  },
+  {
+    "from": 35,
+    "to": 38,
+    "label": "HAS_RUN",
+    "properties": {},
+    "id": "edge_27"
+  },
+  {
+    "from": 38,
+    "to": 37,
+    "label": "CHAMPION_MODEL",
+    "properties": {},
+    "id": "edge_28"
+  },
+  {
+    "from": 39,
+    "to": 40,
+    "label": "DELEGATES_TO",
+    "properties": {},
+    "id": "edge_29"
+  },
+  {
+    "from": 39,
+    "to": 41,
+    "label": "DELEGATES_TO",
+    "properties": {},
+    "id": "edge_30"
+  },
+  {
+    "from": 39,
+    "to": 42,
+    "label": "DELEGATES_TO",
+    "properties": {},
+    "id": "edge_31"
+  },
+  {
+    "from": 39,
+    "to": 43,
+    "label": "DELEGATES_TO",
+    "properties": {},
+    "id": "edge_32"
+  },
+  {
+    "from": 0,
+    "to": 44,
+    "label": "HAS_RUN",
+    "properties": {},
+    "id": "edge_33"
+  },
+  {
+    "from": 44,
+    "to": 1,
+    "label": "CHAMPION_MODEL",
+    "properties": {},
+    "id": "edge_34"
+  },
+  {
+    "from": 45,
+    "to": 3,
+    "label": "MAPS_TO",
+    "properties": {},
+    "id": "edge_35"
+  },
+  {
+    "from": 46,
+    "to": 3,
+    "label": "MAPS_TO",
+    "properties": {},
+    "id": "edge_36"
+  },
+  {
+    "from": 47,
+    "to": 3,
+    "label": "MAPS_TO",
+    "properties": {},
+    "id": "edge_37"
+  },
+  {
+    "from": 48,
+    "to": 4,
+    "label": "MAPS_TO",
+    "properties": {},
+    "id": "edge_38"
+  },
+  {
+    "from": 49,
+    "to": 4,
+    "label": "MAPS_TO",
+    "properties": {},
+    "id": "edge_39"
+  },
+  {
+    "from": 50,
+    "to": 5,
+    "label": "MAPS_TO",
+    "properties": {},
+    "id": "edge_40"
+  },
+  {
+    "from": 51,
+    "to": 5,
+    "label": "MAPS_TO",
+    "properties": {},
+    "id": "edge_41"
+  },
+  {
+    "from": 0,
+    "to": 52,
+    "label": "HAS_RUN",
+    "properties": {},
+    "id": "edge_42"
+  },
+  {
+    "from": 52,
+    "to": 1,
+    "label": "CHAMPION_MODEL",
+    "properties": {},
+    "id": "edge_43"
+  },
+  {
+    "from": 195,
+    "to": 173,
+    "label": "ENABLES",
+    "properties": {
+      "strength": 0.95,
+      "evidence": "Most real-world series lack stationarity and need differencing"
+    },
+    "id": "edge_44"
+  },
+  {
+    "from": 206,
+    "to": 179,
+    "label": "IMPLEMENTS",
+    "properties": {
+      "strength": 0.9,
+      "evidence": "MLflow standardise le registre de modeles centralise"
+    },
+    "id": "edge_45"
+  },
+  {
+    "from": 209,
+    "to": 197,
+    "label": "ENABLES",
+    "properties": {
+      "strength": 0.95,
+      "evidence": "Docker ensures the same environment avoiding works on my machine"
+    },
+    "id": "edge_46"
+  },
+  {
+    "from": 208,
+    "to": 175,
+    "label": "PREVENTS",
+    "properties": {
+      "evidence": "Feast prevent training-serving skew",
+      "strength": 0.85
+    },
+    "id": "edge_47"
+  },
+  {
+    "from": 220,
+    "to": 196,
+    "label": "ENABLES",
+    "properties": {
+      "strength": 0.9,
+      "evidence": "Great Expectations is an open-source tool for data quality testing"
+    },
+    "id": "edge_48"
+  },
+  {
+    "from": 225,
+    "to": 226,
+    "label": "ALTERNATIVE_TO",
+    "properties": {
+      "strength": 0.85,
+      "evidence": "CrewAI assigns fixed roles, AutoGen let agents communicate conversationally"
+    },
+    "id": "edge_49"
+  },
+  {
+    "from": 224,
+    "to": 193,
+    "label": "IMPLEMENTS",
+    "properties": {
+      "strength": 0.95,
+      "evidence": "LangGraph provides fine-grained control via DAGs"
+    },
+    "id": "edge_50"
+  },
+  {
+    "from": 227,
+    "to": 226,
+    "label": "PART_OF",
+    "properties": {
+      "strength": 1.0,
+      "evidence": "Microsoft merged AutoGen with Semantic Kernel into Microsoft Agent Framework"
+    },
+    "id": "edge_51"
+  },
+  {
+    "from": 228,
+    "to": 184,
+    "label": "ENABLES",
+    "properties": {
+      "strength": 0.95,
+      "evidence": "Haystack builds everything around RAG"
+    },
+    "id": "edge_52"
+  },
+  {
+    "from": 229,
+    "to": 224,
+    "label": "ALTERNATIVE_TO",
+    "properties": {
+      "strength": 0.85,
+      "evidence": "Smolagents is for single-agent minimal setup, LangGraph for complex branching"
+    },
+    "id": "edge_53"
+  },
+  {
+    "from": 177,
+    "to": 176,
+    "label": "COMPLEMENTS",
+    "properties": {
+      "strength": 0.8,
+      "evidence": "Spline features can be combined with lagged features for robust TS modeling"
+    },
+    "id": "edge_54"
+  },
+  {
+    "from": 219,
+    "to": 196,
+    "label": "ENABLES",
+    "properties": {
+      "strength": 0.95,
+      "evidence": "Pandera is a framework for data validation on dataframe-like objects"
+    },
+    "id": "edge_55"
+  },
+  {
+    "from": 213,
+    "to": 197,
+    "label": "ENABLES",
+    "properties": {
+      "strength": 0.8,
+      "evidence": "Jupytext convert notebooks to text formats for version control"
+    },
+    "id": "edge_56"
+  },
+  {
+    "from": 192,
+    "to": 185,
+    "label": "ENABLES",
+    "properties": {
+      "strength": 0.85,
+      "evidence": "PCA decrit les directions de variance maximale ou les centroides s'alignent"
+    },
+    "id": "edge_57"
+  },
+  {
+    "from": 222,
+    "to": 189,
+    "label": "PART_OF",
+    "properties": {
+      "strength": 0.9,
+      "evidence": "XGBoost is often used as a base model in stacking architectures"
+    },
+    "id": "edge_58"
+  },
+  {
+    "from": 183,
+    "to": 191,
+    "label": "ALTERNATIVE_TO",
+    "properties": {
+      "strength": 0.85,
+      "evidence": "Winsorization cap values, while Isolation Forest removes or isolates anomalies"
+    },
+    "id": "edge_59"
+  },
+  {
+    "from": 217,
+    "to": 196,
+    "label": "IMPLEMENTS",
+    "properties": {
+      "strength": 0.85,
+      "evidence": "dbt brings software engineering testing to data models"
+    },
+    "id": "edge_60"
+  },
+  {
+    "from": 218,
+    "to": 176,
+    "label": "ENABLES",
+    "properties": {
+      "strength": 0.9,
+      "evidence": "Polars automatically caches subexpressions like shift() for fast lag features"
+    },
+    "id": "edge_61"
+  },
+  {
+    "from": 186,
+    "to": 185,
+    "label": "EVALUATES",
+    "properties": {
+      "strength": 0.95,
+      "evidence": "Silhouette scores are used to select the optimal number of clusters in KMeans"
+    },
+    "id": "edge_62"
+  },
+  {
+    "from": 210,
+    "to": 179,
+    "label": "INTEGRATES_WITH",
+    "properties": {
+      "strength": 0.85,
+      "evidence": "FastAPI serves the best model stored in the MLflow Model Registry"
+    },
+    "id": "edge_63"
+  },
+  {
+    "from": 190,
+    "to": 222,
+    "label": "USES",
+    "properties": {
+      "strength": 0.8,
+      "evidence": "Pseudo labels act as regularization for strong gradient boosting models"
+    },
+    "id": "edge_64"
+  },
+  {
+    "from": 178,
+    "to": 176,
+    "label": "EVALUATES",
+    "properties": {
+      "strength": 0.95,
+      "evidence": "Walk-forward validation evaluates models using lagged features without leakage"
+    },
+    "id": "edge_65"
+  },
+  {
+    "from": 230,
+    "to": 193,
+    "label": "IMPLEMENTS",
+    "properties": {
+      "strength": 0.9,
+      "evidence": "Mastra provides .then() and .branch() primitives for graph execution"
+    },
+    "id": "edge_66"
+  },
+  {
+    "from": 194,
+    "to": 184,
+    "label": "ENABLES",
+    "properties": {
+      "strength": 0.85,
+      "evidence": "MCP connects AI models to secure data sources natively"
+    },
+    "id": "edge_67"
+  },
+  {
+    "from": 181,
+    "to": 211,
+    "label": "IMPLEMENTED_BY",
+    "properties": {
+      "strength": 0.9,
+      "evidence": "Seldon Core provides native Kubernetes routing for Canary deployments"
+    },
+    "id": "edge_68"
+  },
+  {
+    "from": 182,
+    "to": 211,
+    "label": "IMPLEMENTED_BY",
+    "properties": {
+      "strength": 0.9,
+      "evidence": "Seldon Core supports Blue-Green shadow deployments"
+    },
+    "id": "edge_69"
+  },
+  {
+    "from": 209,
+    "to": 210,
+    "label": "PACKAGES",
+    "properties": {
+      "strength": 0.95,
+      "evidence": "Docker containerizes the FastAPI serving code and environment"
+    },
+    "id": "edge_70"
+  },
+  {
+    "from": 212,
+    "to": 216,
+    "label": "ORCHESTRATED_BY",
+    "properties": {
+      "strength": 0.85,
+      "evidence": "Papermill notebooks can be scheduled as DAGs in Airflow"
+    },
+    "id": "edge_71"
+  },
+  {
+    "from": 214,
+    "to": 213,
+    "label": "ALTERNATIVE_TO",
+    "properties": {
+      "strength": 0.95,
+      "evidence": "Marimo solves the versioning issue natively without Jupytext syncing"
+    },
+    "id": "edge_72"
+  },
+  {
+    "from": 187,
+    "to": 185,
+    "label": "ALTERNATIVE_TO",
+    "properties": {
+      "strength": 0.9,
+      "evidence": "DBSCAN handles arbitrary shapes, K-Means assumes spherical clusters"
+    },
+    "id": "edge_73"
+  },
+  {
+    "from": 188,
+    "to": 192,
+    "label": "ALTERNATIVE_TO",
+    "properties": {
+      "strength": 0.85,
+      "evidence": "UMAP preserves non-linear local topology unlike linear PCA"
+    },
+    "id": "edge_74"
+  },
+  {
+    "from": 223,
+    "to": 222,
+    "label": "OPTIMIZES",
+    "properties": {
+      "strength": 0.95,
+      "evidence": "Optuna performs hyperparameter search for XGBoost parameters"
+    },
+    "id": "edge_75"
+  },
+  {
+    "from": 207,
+    "to": 206,
+    "label": "COMPLEMENTS",
+    "properties": {
+      "strength": 0.9,
+      "evidence": "DVC versions data, MLflow versions model artifacts and metrics"
+    },
+    "id": "edge_76"
+  },
+  {
+    "from": 215,
+    "to": 213,
+    "label": "COMPLEMENTS",
+    "properties": {
+      "strength": 0.8,
+      "evidence": "Quarto publishes documents rendered from scripts or notebooks"
+    },
+    "id": "edge_77"
+  },
+  {
+    "from": 189,
+    "to": 222,
+    "label": "USES",
+    "properties": {
+      "strength": 0.9,
+      "evidence": "XGBoost is used as a highly optimized base or meta model in stacking"
+    },
+    "id": "edge_78"
+  },
+  {
+    "from": 175,
+    "to": 196,
+    "label": "DETECTED_BY",
+    "properties": {
+      "strength": 0.85,
+      "evidence": "Continuous data validation catches drift distributions"
+    },
+    "id": "edge_79"
+  },
+  {
+    "from": 224,
+    "to": 225,
+    "label": "ALTERNATIVE_TO",
+    "properties": {
+      "strength": 0.9,
+      "evidence": "LangGraph gives explicit graph control, CrewAI offers fast role-based setup"
+    },
+    "id": "edge_80"
+  },
+  {
+    "from": 221,
+    "to": 219,
+    "label": "ALTERNATIVE_TO",
+    "properties": {
+      "strength": 0.8,
+      "evidence": "Both perform dataframe testing but in different ecosystems"
+    },
+    "id": "edge_81"
+  },
+  {
+    "from": 217,
+    "to": 218,
+    "label": "ALTERNATIVE_TO",
+    "properties": {
+      "strength": 0.7,
+      "evidence": "dbt transforms in warehouse, Polars transforms in-memory"
+    },
+    "id": "edge_82"
+  },
+  {
+    "from": 190,
+    "to": 189,
+    "label": "COMPLEMENTS",
+    "properties": {
+      "strength": 0.85,
+      "evidence": "Both techniques improve model robustness in Kaggle pipelines"
+    },
+    "id": "edge_83"
+  },
+  {
+    "from": 173,
+    "to": 176,
+    "label": "COMPLEMENTS",
+    "properties": {
+      "strength": 0.8,
+      "evidence": "Stationarity improves the stability of lagged feature correlations"
+    },
+    "id": "edge_84"
+  },
+  {
+    "from": 229,
+    "to": 225,
+    "label": "ALTERNATIVE_TO",
+    "properties": {
+      "strength": 0.85,
+      "evidence": "Smolagents is code-first single agent, CrewAI is multi-agent role-based"
+    },
+    "id": "edge_85"
+  },
+  {
+    "from": 191,
+    "to": 187,
+    "label": "COMPLEMENTS",
+    "properties": {
+      "strength": 0.8,
+      "evidence": "Both isolate noise, but DBSCAN is spatial and Isolation Forest uses trees"
+    },
+    "id": "edge_86"
+  },
+  {
+    "from": 228,
+    "to": 227,
+    "label": "ALTERNATIVE_TO",
+    "properties": {
+      "strength": 0.85,
+      "evidence": "Haystack is document-pipeline focused, Semantic Kernel is enterprise SDK focused"
+    },
+    "id": "edge_87"
+  },
+  {
+    "from": 181,
+    "to": 182,
+    "label": "ALTERNATIVE_TO",
+    "properties": {
+      "strength": 0.9,
+      "evidence": "Canary ramps up traffic percentage, Blue-Green cuts over instantly"
+    },
+    "id": "edge_88"
+  },
+  {
+    "from": 180,
+    "to": 179,
+    "label": "COMPLEMENTS",
+    "properties": {
+      "strength": 0.95,
+      "evidence": "Feature store serves data, Model registry serves the ML artifacts"
+    },
+    "id": "edge_89"
+  },
+  {
+    "from": 216,
+    "to": 217,
+    "label": "ORCHESTRATES",
+    "properties": {
+      "strength": 0.9,
+      "evidence": "Airflow DAGs trigger dbt transformations in the data warehouse"
+    },
+    "id": "edge_90"
+  },
+  {
+    "from": 198,
+    "to": 213,
+    "label": "REQUIRES",
+    "properties": {
+      "strength": 0.95,
+      "evidence": "Le NDD necessite Jupytext pour versionner correctement."
+    },
+    "id": "edge_91"
+  },
+  {
+    "from": 199,
+    "to": 206,
+    "label": "REQUIRES",
+    "properties": {
+      "strength": 1.0,
+      "evidence": "MLflow est au coeur des pipelines MLOps."
+    },
+    "id": "edge_92"
+  },
+  {
+    "from": 200,
+    "to": 178,
+    "label": "PREVENTED_BY",
+    "properties": {
+      "strength": 0.9,
+      "evidence": "Le split chronologique empeche le data leakage."
+    },
+    "id": "edge_93"
+  },
+  {
+    "from": 201,
+    "to": 177,
+    "label": "ALTERNATIVE_TO",
+    "properties": {
+      "strength": 0.85,
+      "evidence": "Alternative mathematique simple aux splines."
+    },
+    "id": "edge_94"
+  },
+  {
+    "from": 202,
+    "to": 176,
+    "label": "REQUIRES",
+    "properties": {
+      "strength": 0.95,
+      "evidence": "Le MMM a besoin de features retardees pour capter l'adstock."
+    },
+    "id": "edge_95"
+  },
+  {
+    "from": 203,
+    "to": 194,
+    "label": "REQUIRES",
+    "properties": {
+      "strength": 0.95,
+      "evidence": "Le MCP sert de protocole pour la couche Outils."
+    },
+    "id": "edge_96"
+  },
+  {
+    "from": 204,
+    "to": 225,
+    "label": "IMPLEMENTED_BY",
+    "properties": {
+      "strength": 0.9,
+      "evidence": "CrewAI impl\u00e9mente la soci\u00e9t\u00e9 d'agents avec r\u00f4les fixes."
+    },
+    "id": "edge_97"
+  },
+  {
+    "from": 204,
+    "to": 224,
+    "label": "IMPLEMENTED_BY",
+    "properties": {
+      "strength": 0.9,
+      "evidence": "LangGraph coordonne la soci\u00e9t\u00e9 d'agents via graphes d'\u00e9tat."
+    },
+    "id": "edge_98"
+  },
+  {
+    "from": 205,
+    "to": 206,
+    "label": "EVALUATES",
+    "properties": {
+      "evidence": "TCO n\u00e9cessite suivi MLOps.",
+      "strength": 0.85
+    },
+    "id": "edge_99"
+  },
+  {
+    "from": 231,
+    "to": 232,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_100"
+  },
+  {
+    "from": 231,
+    "to": 233,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_101"
+  },
+  {
+    "from": 231,
+    "to": 234,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_102"
+  },
+  {
+    "from": 235,
+    "to": 236,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_103"
+  },
+  {
+    "from": 235,
+    "to": 237,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_104"
+  },
+  {
+    "from": 235,
+    "to": 238,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_105"
+  },
+  {
+    "from": 239,
+    "to": 240,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_106"
+  },
+  {
+    "from": 239,
+    "to": 241,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_107"
+  },
+  {
+    "from": 239,
+    "to": 242,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_108"
+  },
+  {
+    "from": 243,
+    "to": 244,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_109"
+  },
+  {
+    "from": 243,
+    "to": 245,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_110"
+  },
+  {
+    "from": 243,
+    "to": 246,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_111"
+  },
+  {
+    "from": 247,
+    "to": 248,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_112"
+  },
+  {
+    "from": 247,
+    "to": 249,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_113"
+  },
+  {
+    "from": 247,
+    "to": 250,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_114"
+  },
+  {
+    "from": 251,
+    "to": 252,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_115"
+  },
+  {
+    "from": 251,
+    "to": 253,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_116"
+  },
+  {
+    "from": 251,
+    "to": 254,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_117"
+  },
+  {
+    "from": 255,
+    "to": 256,
+    "label": "HAS_BRANCH",
+    "properties": {},
+    "id": "edge_118"
+  },
+  {
+    "from": 255,
+    "to": 257,
+    "label": "HAS_BRANCH",
+    "properties": {},
+    "id": "edge_119"
+  },
+  {
+    "from": 258,
+    "to": 259,
+    "label": "HAS_BRANCH",
+    "properties": {},
+    "id": "edge_120"
+  },
+  {
+    "from": 258,
+    "to": 260,
+    "label": "HAS_BRANCH",
+    "properties": {},
+    "id": "edge_121"
+  },
+  {
+    "from": 258,
+    "to": 261,
+    "label": "HAS_BRANCH",
+    "properties": {},
+    "id": "edge_122"
+  },
+  {
+    "from": 262,
+    "to": 263,
+    "label": "HAS_BRANCH",
+    "properties": {},
+    "id": "edge_123"
+  },
+  {
+    "from": 262,
+    "to": 264,
+    "label": "HAS_BRANCH",
+    "properties": {},
+    "id": "edge_124"
+  },
+  {
+    "from": 265,
+    "to": 266,
+    "label": "HAS_BRANCH",
+    "properties": {},
+    "id": "edge_125"
+  },
+  {
+    "from": 265,
+    "to": 267,
+    "label": "HAS_BRANCH",
+    "properties": {},
+    "id": "edge_126"
+  },
+  {
+    "from": 268,
+    "to": 269,
+    "label": "HAS_BRANCH",
+    "properties": {},
+    "id": "edge_127"
+  },
+  {
+    "from": 268,
+    "to": 270,
+    "label": "HAS_BRANCH",
+    "properties": {},
+    "id": "edge_128"
+  },
+  {
+    "from": 271,
+    "to": 272,
+    "label": "HAS_BRANCH",
+    "properties": {},
+    "id": "edge_129"
+  },
+  {
+    "from": 271,
+    "to": 273,
+    "label": "HAS_BRANCH",
+    "properties": {},
+    "id": "edge_130"
+  },
+  {
+    "from": 271,
+    "to": 274,
+    "label": "HAS_BRANCH",
+    "properties": {},
+    "id": "edge_131"
+  },
+  {
+    "from": 173,
+    "to": 160,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_132"
+  },
+  {
+    "from": 174,
+    "to": 160,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_133"
+  },
+  {
+    "from": 176,
+    "to": 160,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_134"
+  },
+  {
+    "from": 177,
+    "to": 160,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_135"
+  },
+  {
+    "from": 178,
+    "to": 160,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_136"
+  },
+  {
+    "from": 195,
+    "to": 160,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_137"
+  },
+  {
+    "from": 231,
+    "to": 160,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_138"
+  },
+  {
+    "from": 175,
+    "to": 161,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_139"
+  },
+  {
+    "from": 179,
+    "to": 161,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_140"
+  },
+  {
+    "from": 180,
+    "to": 161,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_141"
+  },
+  {
+    "from": 181,
+    "to": 161,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_142"
+  },
+  {
+    "from": 182,
+    "to": 161,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_143"
+  },
+  {
+    "from": 197,
+    "to": 161,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_144"
+  },
+  {
+    "from": 199,
+    "to": 161,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_145"
+  },
+  {
+    "from": 205,
+    "to": 161,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_146"
+  },
+  {
+    "from": 206,
+    "to": 161,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_147"
+  },
+  {
+    "from": 207,
+    "to": 161,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_148"
+  },
+  {
+    "from": 208,
+    "to": 161,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_149"
+  },
+  {
+    "from": 209,
+    "to": 161,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_150"
+  },
+  {
+    "from": 210,
+    "to": 161,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_151"
+  },
+  {
+    "from": 211,
+    "to": 161,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_152"
+  },
+  {
+    "from": 235,
+    "to": 161,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_153"
+  },
+  {
+    "from": 183,
+    "to": 162,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_154"
+  },
+  {
+    "from": 192,
+    "to": 162,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_155"
+  },
+  {
+    "from": 196,
+    "to": 162,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_156"
+  },
+  {
+    "from": 212,
+    "to": 162,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_157"
+  },
+  {
+    "from": 213,
+    "to": 162,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_158"
+  },
+  {
+    "from": 214,
+    "to": 162,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_159"
+  },
+  {
+    "from": 215,
+    "to": 162,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_160"
+  },
+  {
+    "from": 216,
+    "to": 162,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_161"
+  },
+  {
+    "from": 217,
+    "to": 162,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_162"
+  },
+  {
+    "from": 218,
+    "to": 162,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_163"
+  },
+  {
+    "from": 219,
+    "to": 162,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_164"
+  },
+  {
+    "from": 220,
+    "to": 162,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_165"
+  },
+  {
+    "from": 221,
+    "to": 162,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_166"
+  },
+  {
+    "from": 239,
+    "to": 162,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_167"
+  },
+  {
+    "from": 189,
+    "to": 163,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_168"
+  },
+  {
+    "from": 190,
+    "to": 163,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_169"
+  },
+  {
+    "from": 222,
+    "to": 163,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_170"
+  },
+  {
+    "from": 223,
+    "to": 163,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_171"
+  },
+  {
+    "from": 251,
+    "to": 163,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_172"
+  },
+  {
+    "from": 185,
+    "to": 164,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_173"
+  },
+  {
+    "from": 186,
+    "to": 164,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_174"
+  },
+  {
+    "from": 187,
+    "to": 164,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_175"
+  },
+  {
+    "from": 188,
+    "to": 164,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_176"
+  },
+  {
+    "from": 191,
+    "to": 164,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_177"
+  },
+  {
+    "from": 247,
+    "to": 164,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_178"
+  },
+  {
+    "from": 184,
+    "to": 165,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_179"
+  },
+  {
+    "from": 193,
+    "to": 165,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_180"
+  },
+  {
+    "from": 194,
+    "to": 165,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_181"
+  },
+  {
+    "from": 203,
+    "to": 165,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_182"
+  },
+  {
+    "from": 204,
+    "to": 165,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_183"
+  },
+  {
+    "from": 224,
+    "to": 165,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_184"
+  },
+  {
+    "from": 225,
+    "to": 165,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_185"
+  },
+  {
+    "from": 226,
+    "to": 165,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_186"
+  },
+  {
+    "from": 227,
+    "to": 165,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_187"
+  },
+  {
+    "from": 228,
+    "to": 165,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_188"
+  },
+  {
+    "from": 229,
+    "to": 165,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_189"
+  },
+  {
+    "from": 230,
+    "to": 165,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_190"
+  },
+  {
+    "from": 243,
+    "to": 165,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_191"
+  },
+  {
+    "from": 198,
+    "to": 166,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_192"
+  },
+  {
+    "from": 200,
+    "to": 167,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_193"
+  },
+  {
+    "from": 201,
+    "to": 168,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_194"
+  },
+  {
+    "from": 202,
+    "to": 169,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_195"
+  },
+  {
+    "from": 279,
+    "to": 280,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_196"
+  },
+  {
+    "from": 279,
+    "to": 281,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_197"
+  },
+  {
+    "from": 279,
+    "to": 282,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_198"
+  },
+  {
+    "from": 283,
+    "to": 284,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_199"
+  },
+  {
+    "from": 283,
+    "to": 285,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_200"
+  },
+  {
+    "from": 286,
+    "to": 287,
+    "label": "HAS_BRANCH",
+    "properties": {},
+    "id": "edge_201"
+  },
+  {
+    "from": 286,
+    "to": 288,
+    "label": "HAS_BRANCH",
+    "properties": {},
+    "id": "edge_202"
+  },
+  {
+    "from": 279,
+    "to": 275,
+    "label": "REQUIRES",
+    "properties": {},
+    "id": "edge_203"
+  },
+  {
+    "from": 279,
+    "to": 278,
+    "label": "USES_TOOL",
+    "properties": {},
+    "id": "edge_204"
+  },
+  {
+    "from": 283,
+    "to": 276,
+    "label": "AVOIDS",
+    "properties": {},
+    "id": "edge_205"
+  },
+  {
+    "from": 283,
+    "to": 289,
+    "label": "USES_TOOL",
+    "properties": {},
+    "id": "edge_206"
+  },
+  {
+    "from": 292,
+    "to": 293,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_207"
+  },
+  {
+    "from": 292,
+    "to": 294,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_208"
+  },
+  {
+    "from": 292,
+    "to": 295,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_209"
+  },
+  {
+    "from": 296,
+    "to": 297,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_210"
+  },
+  {
+    "from": 296,
+    "to": 298,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_211"
+  },
+  {
+    "from": 296,
+    "to": 299,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_212"
+  },
+  {
+    "from": 300,
+    "to": 301,
+    "label": "HAS_BRANCH",
+    "properties": {},
+    "id": "edge_213"
+  },
+  {
+    "from": 300,
+    "to": 302,
+    "label": "HAS_BRANCH",
+    "properties": {},
+    "id": "edge_214"
+  },
+  {
+    "from": 292,
+    "to": 290,
+    "label": "REQUIRES",
+    "properties": {},
+    "id": "edge_215"
+  },
+  {
+    "from": 292,
+    "to": 303,
+    "label": "USES_TOOL",
+    "properties": {},
+    "id": "edge_216"
+  },
+  {
+    "from": 296,
+    "to": 291,
+    "label": "REQUIRES",
+    "properties": {},
+    "id": "edge_217"
+  },
+  {
+    "from": 296,
+    "to": 222,
+    "label": "USES_TOOL",
+    "properties": {},
+    "id": "edge_218"
+  },
+  {
+    "from": 307,
+    "to": 308,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_219"
+  },
+  {
+    "from": 307,
+    "to": 309,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_220"
+  },
+  {
+    "from": 307,
+    "to": 310,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_221"
+  },
+  {
+    "from": 311,
+    "to": 312,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_222"
+  },
+  {
+    "from": 311,
+    "to": 313,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_223"
+  },
+  {
+    "from": 311,
+    "to": 314,
+    "label": "HAS_STEP",
+    "properties": {},
+    "id": "edge_224"
+  },
+  {
+    "from": 315,
+    "to": 316,
+    "label": "HAS_BRANCH",
+    "properties": {},
+    "id": "edge_225"
+  },
+  {
+    "from": 315,
+    "to": 317,
+    "label": "HAS_BRANCH",
+    "properties": {},
+    "id": "edge_226"
+  },
+  {
+    "from": 307,
+    "to": 304,
+    "label": "REQUIRES",
+    "properties": {},
+    "id": "edge_227"
+  },
+  {
+    "from": 307,
+    "to": 306,
+    "label": "USES_TOOL",
+    "properties": {},
+    "id": "edge_228"
+  },
+  {
+    "from": 311,
+    "to": 304,
+    "label": "REQUIRES",
+    "properties": {},
+    "id": "edge_229"
+  },
+  {
+    "from": 311,
+    "to": 306,
+    "label": "USES_TOOL",
+    "properties": {},
+    "id": "edge_230"
+  },
+  {
+    "from": 276,
+    "to": 170,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_231"
+  },
+  {
+    "from": 275,
+    "to": 170,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_232"
+  },
+  {
+    "from": 277,
+    "to": 170,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_233"
+  },
+  {
+    "from": 279,
+    "to": 170,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_234"
+  },
+  {
+    "from": 283,
+    "to": 170,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_235"
+  },
+  {
+    "from": 290,
+    "to": 171,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_236"
+  },
+  {
+    "from": 291,
+    "to": 171,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_237"
+  },
+  {
+    "from": 292,
+    "to": 171,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_238"
+  },
+  {
+    "from": 296,
+    "to": 171,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_239"
+  },
+  {
+    "from": 304,
+    "to": 172,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_240"
+  },
+  {
+    "from": 305,
+    "to": 172,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_241"
+  },
+  {
+    "from": 307,
+    "to": 172,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_242"
+  },
+  {
+    "from": 311,
+    "to": 172,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_243"
+  },
+  {
+    "from": 306,
+    "to": 172,
+    "label": "BELONGS_TO",
+    "properties": {},
+    "id": "edge_244"
+  }
+];
+        const colorMap = {
+  "Domain": {
+    "bg": "#f43f5e",
+    "border": "#fda4af",
+    "highlight": "#e11d48"
+  },
+  "Concept": {
+    "bg": "#06b6d4",
+    "border": "#67e8f9",
+    "highlight": "#0891b2"
+  },
+  "Tool": {
+    "bg": "#10b981",
+    "border": "#6ee7b7",
+    "highlight": "#059669"
+  },
+  "Procedure": {
+    "bg": "#f59e0b",
+    "border": "#fde047",
+    "highlight": "#d97706"
+  },
+  "DecisionTree": {
+    "bg": "#8b5cf6",
+    "border": "#c4b5fd",
+    "highlight": "#7c3aed"
+  },
+  "Step": {
+    "bg": "#64748b",
+    "border": "#cbd5e1",
+    "highlight": "#475569"
+  },
+  "DecisionBranch": {
+    "bg": "#eab308",
+    "border": "#fef08a",
+    "highlight": "#ca8a04"
+  },
+  "SemanticConcept": {
+    "bg": "#a855f7",
+    "border": "#d8b4fe",
+    "highlight": "#9333ea"
+  },
+  "Remedy": {
+    "bg": "#ec4899",
+    "border": "#fbcfe8",
+    "highlight": "#db2777"
+  },
+  "Run": {
+    "bg": "#0d9488",
+    "border": "#99f6e4",
+    "highlight": "#0f766e"
+  },
+  "Model": {
+    "bg": "#3b82f6",
+    "border": "#93c5fd",
+    "highlight": "#2563eb"
+  },
+  "ColumnMapping": {
+    "bg": "#f97316",
+    "border": "#ffedd5",
+    "highlight": "#ea580c"
+  },
+  "Action": {
+    "bg": "#d946ef",
+    "border": "#f5d0fe",
+    "highlight": "#c026d3"
+  },
+  "Agent": {
+    "bg": "#6366f1",
+    "border": "#c7d2fe",
+    "highlight": "#4f46e5"
+  }
+};
+
+        let network = null;
+        let nodesDataset = null;
+        let edgesDataset = null;
+        let highlightActive = false;
+        let originalNodesData = [];
+        let originalEdgesData = [];
+        let physicsEnabled = true;
+        let hiddenTypes = new Set();
+
+        function initGraph() {
+            // Créer les datasets vis.js
+            nodesDataset = new vis.DataSet(rawNodes);
+            edgesDataset = new vis.DataSet(rawEdges);
+            originalNodesData = JSON.parse(JSON.stringify(rawNodes));
+            originalEdgesData = JSON.parse(JSON.stringify(rawEdges));
+
+            // Mettre à jour les statistiques
+            document.getElementById('totalNodesVal').innerText = rawNodes.length;
+            document.getElementById('totalRelsVal').innerText = rawEdges.length;
+
+            const container = document.getElementById('mynetwork');
+            const data = {
+                nodes: nodesDataset,
+                edges: edgesDataset
+            };
+
+            // Options Vis.js premium
+            const options = {
+                nodes: {
+                    shape: 'dot',
+                    font: {
+                        color: '#ffffff',
+                        size: 12,
+                        face: 'Inter',
+                        strokeWidth: 2,
+                        strokeColor: '#080c14'
+                    },
+                    borderWidth: 2,
+                    shadow: {
+                        enabled: true,
+                        color: 'rgba(0, 0, 0, 0.4)',
+                        size: 4,
+                        x: 2,
+                        y: 2
+                    }
+                },
+                edges: {
+                    width: 1.5,
+                    color: {
+                        color: 'rgba(100, 116, 139, 0.4)',
+                        highlight: '#818cf8',
+                        hover: '#818cf8'
+                    },
+                    arrows: {
+                        to: {
+                            enabled: true,
+                            scaleFactor: 0.5
+                        }
+                    },
+                    smooth: {
+                        enabled: true,
+                        type: 'dynamic',
+                        roundness: 0.5
+                    },
+                    shadow: {
+                        enabled: true,
+                        color: 'rgba(0, 0, 0, 0.2)',
+                        size: 3,
+                        x: 1,
+                        y: 1
+                    }
+                },
+                physics: {
+                    enabled: true,
+                    barnesHut: {
+                        gravitationalConstant: -2000,
+                        centralGravity: 0.25,
+                        springLength: 95,
+                        springConstant: 0.04,
+                        damping: 0.85,
+                        avoidOverlap: 0.8
+                    },
+                    stabilization: {
+                        enabled: true,
+                        iterations: 1000,
+                        updateInterval: 25
+                    }
+                },
+                interaction: {
+                    hover: true,
+                    tooltipDelay: 300,
+                    hideEdgesOnDrag: true
+                }
+            };
+
+            // Lancer le graphe
+            network = new vis.Network(container, data, options);
+
+            // Suivre le chargement/stabilisation pour masquer l'écran de chargement
+            network.on("stabilizationProgress", function(params) {
+                let progress = Math.round((params.iterations / params.total) * 100);
+                document.getElementById('loaderBarWidth').style.width = progress + '%';
+                document.getElementById('loaderText').innerText = `Stabilisation du graphe : ${progress}%`;
+            });
+
+            network.on("stabilizationIterationsDone", function() {
+                // Figer la physique après stabilisation pour une fluidité maximale de navigation (60 FPS)
+                physicsEnabled = false;
+                network.setOptions({ physics: { enabled: false } });
+                
+                const btn = document.getElementById('physicsBtn');
+                if (btn) {
+                    btn.innerHTML = '<i class="fa-solid fa-play"></i> Activer la physique';
+                    btn.classList.add('control-btn-secondary');
+                }
+
+                document.getElementById('loadingBar').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('loadingBar').style.display = 'none';
+                }, 500);
+            });
+
+            // Gérer les événements de clic
+            network.on("click", function(params) {
+                if (params.nodes.length > 0) {
+                    const clickedNodeId = params.nodes[0];
+                    inspectNode(clickedNodeId);
+                    highlightNeighbors(clickedNodeId);
+                } else {
+                    resetInspector();
+                    resetHighlight();
+                }
+            });
+
+            network.on("doubleClick", function(params) {
+                if (params.nodes.length > 0) {
+                    const clickedNodeId = params.nodes[0];
+                    focusNode(clickedNodeId);
+                }
+            });
+
+            // Remplir la légende et filtres dans la barre latérale
+            renderLegend();
+        }
+
+        // 3. Inspecter un nœud et afficher ses propriétés
+        function inspectNode(nodeId) {
+            const node = rawNodes.find(n => n.id == nodeId);
+            if (!node) return;
+
+            document.getElementById('inspectorPlaceholder').style.display = 'none';
+            document.getElementById('inspectorPanel').style.display = 'block';
+
+            document.getElementById('nodeName').innerText = node.label;
+            
+            const typeTag = document.getElementById('nodeTypeTag');
+            typeTag.innerText = node.type;
+            const colors = colorMap[node.type] || {bg: "#6b7280"};
+            typeTag.style.backgroundColor = colors.bg;
+
+            // Description / Définition
+            const desc = node.properties.definition || node.properties.objective || "Aucune description disponible pour ce nœud.";
+            document.getElementById('nodeDesc').innerText = desc;
+
+            // Propriétés Meta
+            const metaContainer = document.getElementById('nodeMetaContainer');
+            metaContainer.innerHTML = '';
+            for (const [key, value] of Object.entries(node.properties)) {
+                if (key !== 'definition' && key !== 'objective') {
+                    const labelSpan = document.createElement('span');
+                    labelSpan.className = 'inspector-meta-label';
+                    labelSpan.innerText = key.replace('_', ' ') + ' :';
+                    
+                    const valSpan = document.createElement('span');
+                    valSpan.innerText = typeof value === 'object' ? JSON.stringify(value) : value;
+                    
+                    metaContainer.appendChild(labelSpan);
+                    metaContainer.appendChild(valSpan);
+                }
+            }
+
+            // Relations directes
+            const connList = document.getElementById('connectionsList');
+            connList.innerHTML = '';
+
+            const directRels = rawEdges.filter(e => e.from == nodeId || e.to == nodeId);
+            directRels.forEach(rel => {
+                const isOutgoing = rel.from == nodeId;
+                const neighborId = isOutgoing ? rel.to : rel.from;
+                const neighbor = rawNodes.find(n => n.id == neighborId);
+                if (!neighbor) return;
+
+                const li = document.createElement('li');
+                li.className = 'inspector-conn-item';
+                li.onclick = () => {
+                    inspectNode(neighborId);
+                    highlightNeighbors(neighborId);
+                    focusNode(neighborId);
+                };
+
+                const prefix = isOutgoing ? "👉" : "👈";
+                li.innerHTML = `
+                    <span>${prefix} <strong>${neighbor.label}</strong></span>
+                    <span class="inspector-conn-rel">${rel.label}</span>
+                `;
+                connList.appendChild(li);
+            });
+        }
+
+        function resetInspector() {
+            document.getElementById('inspectorPlaceholder').style.display = 'block';
+            document.getElementById('inspectorPanel').style.display = 'none';
+        }
+
+        // 4. Mettre en valeur les voisins et estomper le reste (Neighborhood Highlighting)
+        function highlightNeighbors(clickedNodeId) {
+            highlightActive = true;
+
+            // Récupérer les voisins directs
+            const connectedNodes = network.getConnectedNodes(clickedNodeId);
+            const allNodeIds = rawNodes.map(n => n.id);
+
+            const nodesUpdate = [];
+            const edgesUpdate = [];
+
+            // Assombrir les nœuds non connectés
+            rawNodes.forEach(node => {
+                const colors = colorMap[node.type] || {bg: "#6b7280", border: "#d1d5db"};
+                const isSelected = node.id == clickedNodeId;
+                const isConnected = connectedNodes.includes(node.id);
+
+                if (isSelected) {
+                    // Sélectionné
+                    nodesUpdate.push({
+                        id: node.id,
+                        color: {
+                            background: colors.bg,
+                            border: '#ffffff'
+                        },
+                        font: { color: '#ffffff' }
+                    });
+                } else if (isConnected) {
+                    // Connecté
+                    nodesUpdate.push({
+                        id: node.id,
+                        color: {
+                            background: colors.bg,
+                            border: colors.border
+                        },
+                        font: { color: '#ffffff' }
+                    });
+                } else {
+                    // Estompé
+                    nodesUpdate.push({
+                        id: node.id,
+                        color: {
+                            background: 'rgba(30, 41, 59, 0.15)',
+                            border: 'rgba(30, 41, 59, 0.1)'
+                        },
+                        font: { color: 'rgba(255, 255, 255, 0.15)' }
+                    });
+                }
+            });
+
+            // Estomper les arêtes non connectées
+            rawEdges.forEach(edge => {
+                const connectsToClick = edge.from == clickedNodeId || edge.to == clickedNodeId;
+                if (connectsToClick) {
+                    edgesUpdate.push({
+                        id: edge.id,
+                        color: {
+                            color: '#818cf8',
+                            opacity: 0.9
+                        },
+                        width: 2.5
+                    });
+                } else {
+                    edgesUpdate.push({
+                        id: edge.id,
+                        color: {
+                            color: 'rgba(255, 255, 255, 0.015)',
+                            opacity: 0.02
+                        },
+                        width: 1.0
+                    });
+                }
+            });
+
+            nodesDataset.update(nodesUpdate);
+            edgesDataset.update(edgesUpdate);
+        }
+
+        // Réinitialiser la mise en valeur des arêtes et des nœuds
+        function resetHighlight() {
+            highlightActive = false;
+            
+            // Re-appliquer les styles d'origine à tous les nœuds visibles
+            const nodesUpdate = rawNodes.map(node => {
+                const colors = colorMap[node.type] || {bg: "#6b7280", border: "#d1d5db"};
+                return {
+                    id: node.id,
+                    color: {
+                        background: colors.bg,
+                        border: colors.border
+                    },
+                    font: { color: '#ffffff' }
+                };
+            });
+
+            const edgesUpdate = rawEdges.map(edge => {
+                return {
+                    id: edge.id,
+                    color: {
+                        color: 'rgba(100, 116, 139, 0.4)',
+                        highlight: '#818cf8',
+                        hover: '#818cf8'
+                    },
+                    width: 1.5
+                };
+            });
+
+            nodesDataset.update(nodesUpdate);
+            edgesDataset.update(edgesUpdate);
+        }
+
+        // 5. Centrer/Focaliser la vue sur un nœud
+        function focusNode(nodeId) {
+            network.focus(nodeId, {
+                scale: 1.2,
+                animation: {
+                    duration: 800,
+                    easingFunction: 'easeInOutQuad'
+                }
+            });
+            network.selectNodes([nodeId]);
+        }
+
+        // 6. Barre de recherche et Autocomplete
+        function handleSearch() {
+            const input = document.getElementById('searchInput').value.toLowerCase().trim();
+            const resultsDiv = document.getElementById('searchResults');
+
+            if (input === "") {
+                resultsDiv.style.display = 'none';
+                return;
+            }
+
+            const matches = rawNodes.filter(n => 
+                n.label.toLowerCase().includes(input) && !hiddenTypes.has(n.type)
+            ).slice(0, 8);
+
+            if (matches.length === 0) {
+                resultsDiv.innerHTML = '<div style="padding: 10px; font-size: 12px; color: #64748b;">Aucun résultat</div>';
+                resultsDiv.style.display = 'block';
+                return;
+            }
+
+            resultsDiv.innerHTML = '';
+            matches.forEach(node => {
+                const colors = colorMap[node.type] || {bg: "#6b7280"};
+                const item = document.createElement('div');
+                item.className = 'search-item';
+                item.onclick = () => {
+                    document.getElementById('searchInput').value = node.label;
+                    resultsDiv.style.display = 'none';
+                    inspectNode(node.id);
+                    highlightNeighbors(node.id);
+                    focusNode(node.id);
+                };
+                item.innerHTML = `
+                    <span>${node.label}</span>
+                    <span class="badge" style="background-color: ${colors.bg}">${node.type}</span>
+                `;
+                resultsDiv.appendChild(item);
+            });
+            resultsDiv.style.display = 'block';
+        }
+
+        // 7. Rendre la légende interactive et filtres
+        function renderLegend() {
+            const grid = document.getElementById('legendGrid');
+            grid.innerHTML = '';
+
+            const counts = {};
+            rawNodes.forEach(n => {
+                counts[n.type] = (counts[n.type] || 0) + 1;
+            });
+
+            Object.entries(colorMap).forEach(([type, colors]) => {
+                const count = counts[type] || 0;
+                if (count === 0) return;
+
+                const item = document.createElement('div');
+                item.className = 'legend-item';
+                item.id = `legend-${type}`;
+                item.onclick = () => toggleTypeVisibility(type);
+
+                item.innerHTML = `
+                    <div class="legend-label-container">
+                        <span class="legend-color" style="background-color: ${colors.bg}"></span>
+                        <span>${type}</span>
+                    </div>
+                    <span class="count-badge">${count}</span>
+                `;
+                grid.appendChild(item);
+            });
+        }
+
+        function toggleTypeVisibility(type) {
+            const legendItem = document.getElementById(`legend-${type}`);
+            
+            if (hiddenTypes.has(type)) {
+                // Rendre visible à nouveau
+                hiddenTypes.delete(type);
+                legendItem.style.opacity = '1';
+                legendItem.style.textDecoration = 'none';
+            } else {
+                // Masquer
+                hiddenTypes.add(type);
+                legendItem.style.opacity = '0.4';
+                legendItem.style.textDecoration = 'line-through';
+            }
+
+            applyFilters();
+        }
+
+        function applyFilters() {
+            // Filtrer les nœuds dans le Dataset
+            const filteredNodes = rawNodes.filter(n => !hiddenTypes.has(n.type));
+            const activeNodeIds = new Set(filteredNodes.map(n => n.id));
+
+            // Filtrer les arêtes (ne garder que celles reliant des nœuds visibles)
+            const filteredEdges = rawEdges.filter(e => activeNodeIds.has(e.from) && activeNodeIds.has(e.to));
+
+            // Mettre à jour vis-network
+            nodesDataset.clear();
+            nodesDataset.add(filteredNodes);
+
+            edgesDataset.clear();
+            edgesDataset.add(filteredEdges);
+
+            // Mettre à jour les compteurs
+            document.getElementById('totalNodesVal').innerText = filteredNodes.length;
+            document.getElementById('totalRelsVal').innerText = filteredEdges.length;
+
+            if (highlightActive) {
+                resetHighlight();
+            }
+        }
+
+        // 8. Contrôle de la simulation physique
+        function changePhysics() {
+            const gravity = parseInt(document.getElementById('gravitySlider').value, 10);
+            const spring = parseInt(document.getElementById('springSlider').value, 10);
+
+            network.setOptions({
+                physics: {
+                    barnesHut: {
+                        gravitationalConstant: gravity,
+                        springLength: spring
+                    }
+                }
+            });
+        }
+
+        function togglePhysics() {
+            physicsEnabled = !physicsEnabled;
+            network.setOptions({ physics: { enabled: physicsEnabled } });
+            
+            const btn = document.getElementById('physicsBtn');
+            if (physicsEnabled) {
+                btn.innerHTML = '<i class="fa-solid fa-pause"></i> Figer le mouvement';
+                btn.classList.remove('control-btn-secondary');
+            } else {
+                btn.innerHTML = '<i class="fa-solid fa-play"></i> Activer la physique';
+                btn.classList.add('control-btn-secondary');
+            }
+        }
+
+        // Démarrer à la fin du chargement du DOM
+        window.addEventListener('DOMContentLoaded', initGraph);
+
+        // Fermer la recherche au clic extérieur
+        document.addEventListener('click', function(e) {
+            const searchContainer = document.querySelector('.search-box');
+            if (searchContainer && !searchContainer.contains(e.target)) {
+                document.getElementById('searchResults').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

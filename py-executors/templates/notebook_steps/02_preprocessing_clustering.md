@@ -11,12 +11,26 @@ from sklearn.decomposition import PCA
 import matplotlib.pyplot   as plt
 
 print("⚙️  Extraction des colonnes numériques...")
-num_cols = X_train.select_dtypes(include=np.number).columns.tolist()
-X_num    = X_train[num_cols].fillna(X_num.median()) if 'X_num' in locals() else X_train[num_cols].fillna(X_train[num_cols].median())
+X_train_inp = X_train_clean if 'X_train_clean' in globals() else X_train
+X_test_inp  = X_test_clean if 'X_test_clean' in globals() else X_test
+
+num_cols = X_train_inp.select_dtypes(include=np.number).columns.tolist()
+X_num    = X_train_inp[num_cols].fillna(X_train_inp[num_cols].median())
 
 scaler = RobustScaler()
-X_scaled = pd.DataFrame(scaler.fit_transform(X_num), columns=num_cols)
-print(f"✅ Données prêtes : {X_scaled.shape}")
+X_train_prep = scaler.fit_transform(X_num)
+X_scaled = pd.DataFrame(X_train_prep, columns=num_cols)
+
+# Préparation du test set si disponible
+if 'X_test_inp' in globals() and X_test_inp is not None:
+    X_test_num = X_test_inp[num_cols].fillna(X_train_inp[num_cols].median())
+    X_test_prep = scaler.transform(X_test_num)
+else:
+    X_test_prep = X_train_prep
+
+print(f"✅ Données d'entraînement prêtes : {X_train_prep.shape}")
+print(f"✅ Données de test prêtes : {X_test_prep.shape}")
+
 ```
 
 ### Visualisation Initiale (PCA)

@@ -1,0 +1,14 @@
+{
+  "run_id": "20260718_172458_RandomForest/AutoARIMA",
+  "dataset_name": "cleaned_00618671_20260718_171955.csv",
+  "dataset_hash": "sha256:eea66f3f7644237b66ed999a0ba24a4fe669be8a832185f1df781fb54da610e2",
+  "target_col": "class",
+  "task_type": "classification",
+  "metrics": {
+    "accuracy": 0.85,
+    "shap_surrogate_fidelity": 0.92
+  },
+  "champion_model": "RandomForest/AutoARIMA",
+  "python_version": "3.13.5",
+  "created_at": "2026-07-18T17:24:58.533947"
+}

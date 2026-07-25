@@ -7,22 +7,31 @@ import datetime
 import threading
 import time
 
+_firebase_lock = threading.Lock()
+
 def init_firebase():
-    if not firebase_admin._apps:
-        # Configuration pour l'émulateur local
-        if not os.environ.get('FIRESTORE_EMULATOR_HOST'):
-            os.environ['FIRESTORE_EMULATOR_HOST'] = '127.0.0.1:8080'
+    if not os.environ.get('FIRESTORE_EMULATOR_HOST'):
+        os.environ['FIRESTORE_EMULATOR_HOST'] = '127.0.0.1:8080'
         
+    with _firebase_lock:
         try:
-            # S'il y a un fichier serviceAccountKey.json, on l'utilise
-            if os.path.exists('serviceAccountKey.json'):
-                cred = credentials.Certificate('serviceAccountKey.json')
-                firebase_admin.initialize_app(cred)
-            else:
-                # Sinon on utilise le projet local pour l'émulateur
-                firebase_admin.initialize_app(options={'projectId': 'dataset-automator-local'})
-        except Exception as e:
-            sys.stderr.write(f"⚠️ Erreur initialisation Firebase: {e}\n")
+            firebase_admin.get_app()
+        except ValueError:
+            try:
+                # S'il y a un fichier serviceAccountKey.json, on l'utilise
+                if os.path.exists('serviceAccountKey.json'):
+                    cred = credentials.Certificate('serviceAccountKey.json')
+                    firebase_admin.initialize_app(cred)
+                else:
+                    # Sinon on utilise les identifiants par défaut pour l'émulateur
+                    try:
+                        cred = credentials.ApplicationDefault()
+                        firebase_admin.initialize_app(cred, options={'projectId': 'demo-no-project'})
+                    except Exception:
+                        # En cas de problème, fallback sur l'initialisation simple de l'émulateur
+                        firebase_admin.initialize_app(options={'projectId': 'demo-no-project'})
+            except Exception as e:
+                sys.stderr.write(f"⚠️ Erreur initialisation Firebase: {e}\n")
 
 def get_firestore_db():
     init_firebase()

@@ -10,7 +10,7 @@ async function main() {
   for (const pwd of passwords) {
     console.log(`Testing connection with password: ${pwd}`);
     const tempDriver = neo4j.driver(
-      'bolt://localhost:7687',
+      'bolt://127.0.0.1:7687',
       neo4j.auth.basic('neo4j', pwd)
     );
     try {
@@ -30,7 +30,7 @@ async function main() {
     return;
   }
   
-  const cypherFile = path.resolve(__dirname, '../../import-knowledge-graph.cypher');
+  const cypherFile = path.resolve(__dirname, '../../scripts/neo4j/import-knowledge-graph.cypher');
   const cypherText = fs.readFileSync(cypherFile, 'utf8');
   const statements = cypherText.split(/;\s*$/m).filter(s => s.trim().length > 0);
   
@@ -39,7 +39,8 @@ async function main() {
   
   try {
     for (let i = 0; i < statements.length; i++) {
-      const stmt = statements[i].trim();
+      const stmt = statements[i]?.trim();
+      if (!stmt) continue;
       if (stmt.startsWith('//') && !stmt.includes('\n')) continue; 
       
       console.log(`Executing statement ${i + 1}/${statements.length}...`);

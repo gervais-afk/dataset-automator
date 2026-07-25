@@ -17,23 +17,34 @@ export type DatasetProfile = z.infer<typeof DatasetProfileSchema>;
 
 export const CleaningStrategySchema = z.object({
   target: z.string(),
-  steps: z.array(z.object({
-    column: z.string(),
-    action: z.enum([
-      'drop', 'impute_mean', 'impute_median', 'impute_mode', 
-      'one_hot_encode', 'label_encode', 'standardize'
-    ]),
-    reasoning: z.string().describe("Agent's justification for logging")
-  }))
+  task_type: z.enum([
+    "regression", "classification", "clustering", "timeseries",
+    "anomaly_detection", "survival_analysis", "recommender_system",
+    "causal_inference", "association_rules", "ab_testing",
+    "semi_supervised", "optimization", "graph_analysis",
+    "reinforcement_learning", "nlp", "computer_vision"
+  ]).optional(),
+    steps: z.array(z.object({
+      column: z.string(),
+      action: z.enum(["drop", "impute_mean", "impute_median", "scale", "winsorize", "k_means", "encode", "sanitize_phone", "normalize_cam_geo", "clean_fcfa", "parse_momo", "pca", "add_time_features", "formula"]),
+      formula: z.string().optional().describe("Expression mathématique à évaluer (ex: 'Weight / (Height ** 2)')"),
+      reasoning: z.string().optional().describe("Agent's justification for logging")
+    }))
 });
 
 export type CleaningStrategy = z.infer<typeof CleaningStrategySchema>;
 
 export const MLPipelineSchema = z.object({
-  task: z.enum(['classification', 'regression', 'clustering']),
-  algorithm: z.enum(['RandomForest', 'LogisticRegression', 'XGBoost', 'KMeans']),
+  task: z.enum([
+    "regression", "classification", "clustering", "timeseries",
+    "anomaly_detection", "survival_analysis", "recommender_system",
+    "causal_inference", "association_rules", "ab_testing",
+    "semi_supervised", "optimization", "graph_analysis",
+    "reinforcement_learning", "nlp", "computer_vision"
+  ]),
+  algorithm: z.enum(['RandomForest', 'LogisticRegression', 'XGBoost', 'LightGBM', 'CatBoost', 'KMeans']),
   test_size: z.number().min(0.1).max(0.4).default(0.2),
-  hyperparameters: z.record(z.any()).optional()
+  hyperparameters: z.record(z.string(), z.any()).optional()
 });
 
 export type MLPipeline = z.infer<typeof MLPipelineSchema>;

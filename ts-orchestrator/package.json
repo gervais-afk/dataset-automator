@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "cross-env GENKIT_ENV=dev tsx src/index.ts"
+    "dev": "cross-env GENKIT_ENV=dev tsx src/index.ts",
+    "ingest": "cross-env GENKIT_ENV=dev tsx scripts/auto-ingest.ts"
   },
   "keywords": [],
   "author": "",
@@ -14,6 +15,7 @@
   "dependencies": {
     "@genkit-ai/ai": "^1.36.0",
     "@genkit-ai/core": "^1.36.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "axios": "^1.17.0",
     "firebase-admin": "^14.0.0",
     "genkitx-openai": "^0.30.0",

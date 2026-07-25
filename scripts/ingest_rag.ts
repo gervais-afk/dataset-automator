@@ -9,7 +9,7 @@ function ingestAll() {
   }
 
   // 1. Ingest Concepts
-  const conceptsPath = path.join(__dirname, '..', 'concepts.json');
+  const conceptsPath = path.join(__dirname, '..', 'knowledge_base', 'raw_sources', 'concepts.json');
   if (fs.existsSync(conceptsPath)) {
     const rawData = JSON.parse(fs.readFileSync(conceptsPath, 'utf8'));
     rawData.concepts.forEach((concept: any) => {
@@ -43,7 +43,7 @@ ${concept.source_references ? concept.source_references.map((s: string) => `- ${
   }
 
   // 2. Ingest Decisions
-  const decisionsPath = path.join(__dirname, '..', 'decisions.json');
+  const decisionsPath = path.join(__dirname, '..', 'knowledge_base', 'raw_sources', 'decisions.json');
   if (fs.existsSync(decisionsPath)) {
     const rawData = JSON.parse(fs.readFileSync(decisionsPath, 'utf8'));
     rawData.decisions.forEach((decision: any) => {
@@ -80,7 +80,7 @@ ${branchesText}
   }
 
   // 3. Ingest Procedures
-  const proceduresPath = path.join(__dirname, '..', 'procedures.json');
+  const proceduresPath = path.join(__dirname, '..', 'knowledge_base', 'raw_sources', 'procedures.json');
   if (fs.existsSync(proceduresPath)) {
     const rawData = JSON.parse(fs.readFileSync(proceduresPath, 'utf8'));
     rawData.procedures.forEach((proc: any) => {

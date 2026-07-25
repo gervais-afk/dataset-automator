@@ -17,12 +17,35 @@ print("✅ ÉVALUATION TIMESERIES SENIOR")
 print("=" * 60)
 
 # ── Récupération du meilleur modèle ──────────────────────────────────
-best_result = results[best_name]
-model_type = best_result.get('type', 'ML')
+import mlflow
+
+if 'final_model' in globals() and final_model is not None:
+    best_model = final_model
+    best_name = "Final Model (Pseudo-Labeling)"
+    model_type = "ML"
+    print("Using final_model (with Pseudo-Labeling) for evaluation")
+elif 'stacking_model' in globals():
+    best_model = stacking_model
+    best_name = "Stacking Model"
+    model_type = "ML"
+    print("Using stacking_model for evaluation")
+else:
+    best_result = results[best_name]
+    model_type = best_result.get('type', 'ML')
+    best_model = best_result['model']
+
+# Check if model is fitted, if not, fit it
+if model_type == "ML" and TYPE_TACHE == "timeseries":
+    from sklearn.utils.validation import check_is_fitted
+    from sklearn.exceptions import NotFittedError
+    try:
+        check_is_fitted(best_model)
+    except NotFittedError:
+        print(f"⏳ Fitting {best_name} on X_train_prep...")
+        best_model.fit(X_train_prep, y_train)
 
 # ── Prédictions selon le type de modèle ──────────────────────────────
 if model_type == "ML":
-    best_model = best_result['model']
     y_pred_final = best_model.predict(X_test_prep)
     y_actual = y_test
 elif model_type == "Stat":
@@ -37,8 +60,10 @@ elif model_type == "Stat":
         y_pred_final = best_result['model'].forecast(len(y_test))
         y_actual = y_test
 else:
-    best_model = best_result['model']
-    y_pred_final = best_model.predict(X_test_prep)
+    if hasattr(best_model, "predict"):
+        y_pred_final = best_model.predict(X_test_prep)
+    else:
+        y_pred_final = best_model
     y_actual = y_test
 
 # ── Métriques complètes ──────────────────────────────────────────────
@@ -50,6 +75,21 @@ rmse_final = np.sqrt(mean_squared_error(y_act_arr, y_pred_arr))
 mae_final  = mean_absolute_error(y_act_arr, y_pred_arr)
 mape_final = mean_absolute_percentage_error(y_act_arr, y_pred_arr) * 100
 residus    = y_act_arr - y_pred_arr
+
+# Enregistrement du modèle champion et de ses métriques dans MLflow
+with mlflow.start_run(run_name=f"Champion_{best_name.replace(' ', '_')}", nested=True):
+    mlflow.log_metric("final_R2", r2_final)
+    mlflow.log_metric("final_RMSE", rmse_final)
+    mlflow.log_metric("final_MAE", mae_final)
+    mlflow.log_metric("final_MAPE", mape_final)
+    mlflow.sklearn.log_model(best_model, "model_champion")
+
+# Enregistrement du modèle champion et de ses métriques pour le rapport d'étape
+if best_name not in results:
+    results[best_name] = {}
+results[best_name]['score'] = mae_final if metric == 'mae' else r2_final
+results[best_name]['model'] = best_model
+results[best_name]['type'] = 'ML'
 
 print(f"\n📊 MÉTRIQUES FINALES — {best_name}")
 print(f"   R²    : {r2_final:.4f}")
@@ -128,6 +168,23 @@ except Exception as e:
     plt.title("Autocorrélation des Résidus (Fallback)")
     plt.show()
 
+# ── Residual Lag Plot (Autocorrelation visuelle) ─────────────────────
+try:
+    print("\n📊 Tracé du Residual Lag Plot (Autocorrélation d'ordre 1)...")
+    fig, ax = plt.subplots(figsize=(6, 5))
+    ax.scatter(residus[:-1], residus[1:], alpha=0.5, color='purple')
+    ax.axhline(0, color='black', linestyle='--', lw=1)
+    ax.axvline(0, color='black', linestyle='--', lw=1)
+    ax.set_xlabel("Résidus à l'instant t")
+    ax.set_ylabel("Résidus à l'instant t+1")
+    ax.set_title('Residual Lag Plot (t vs t+1)')
+    ax.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(os.path.join(OUTPUT_DIR, '04_ts_residual_lag.png'), dpi=120, bbox_inches='tight')
+    plt.show()
+except Exception as e_lag:
+    print(f"⚠️ Impossible de tracer le residual lag plot : {e_lag}")
+
 # SHAP — Interprétabilité Locale (si ML)
 if model_type == "ML":
     print("\n🔍 EXPLICATION SHAP (Local Interpretability)")
@@ -152,9 +209,35 @@ print(f"   Champion     : {best_name}")
 print(f"   R² Score     : {r2_final:.4f}")
 print(f"   RMSE         : {rmse_final:,.2f}")
 print(f"   MAPE         : {mape_final:.2f}%")
+
+# ── 4.5 Diagnostics du Data Scientist Senior (Automatisés)
+print("\n" + "=" * 60)
+print("🧠 DIAGNOSTICS DE ROBUSTESSE (SENIOR DATA SCIENCE AUDIT)")
+print("=" * 60)
+from scipy.stats import skew
+from statsmodels.stats.stattools import durbin_watson
+
+skewness_val = skew(residus)
+dw = durbin_watson(residus)
+
+print(f"✅ Erreurs - Asymétrie (Skewness) : {skewness_val:.4f} | Durbin-Watson : {dw:.2f}")
+
+if r2_final < 0.4:
+    print("   🚨 ALERTE PERFORMANCE : Le pouvoir prédictif R² est faible.")
+    print("   → Recommandation : Intégrer de nouvelles variables exogènes, revoir le feature engineering ou changer d'algorithme.")
+if abs(skewness_val) > 1.5:
+    print("   🚨 ALERTE ASYMÉTRIE : Les erreurs de prédiction ont une asymétrie marquée (non gausienne).")
+    print("   → Recommandation : Appliquer une transformation non-linéaire (ex: log(1+x)) sur la cible ou utiliser une perte robuste (Huber / MAE).")
+if dw < 1.5 or dw > 2.5:
+    print(f"   🚨 ALERTE AUTOCORRÉLATION ({dw:.2f}) : Les résidus montrent une corrélation sérielle significative.")
+    print("   → Recommandation : Ajouter des variables auto-régressives (lags) ou des variables de tendance (indice temporel, jours).")
 ```
 
 ## Rapport d'évaluation visuelle
 
 {EVAL_PLOT}
+
+## 🧠 Rapport d'Interprétation Qualitatif RAG (Agent IA Senior)
+
+{LLM_INTERPRETATION}
 

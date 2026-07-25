@@ -2,6 +2,7 @@ import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
 import pino from 'pino';
+import { getActiveModelName } from '../llm-utils';
 
 const logger = pino({ transport: { target: 'pino-pretty' } });
 
@@ -35,10 +36,13 @@ Exemple attendu : ["stationnarité", "log_transform"]
 `;
 
     try {
+      const activeModel = await getActiveModelName();
       const response = await axios.post('http://127.0.0.1:1234/v1/chat/completions', {
-        model: 'google/gemma-4-12b',
+        model: activeModel,
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.1
+      }, {
+        timeout: 300000 // 5 minutes (300 000 ms) pour éviter de bloquer l'extraction des concepts RAG sur machines lentes
       });
 
       const responseText = response.data.choices[0].message.content;

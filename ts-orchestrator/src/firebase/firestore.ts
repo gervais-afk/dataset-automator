@@ -18,7 +18,7 @@ if (!getApps().length) {
     
     logger.info(`🔥 Firebase Admin initialisé via l'Émulateur Local (${process.env.FIRESTORE_EMULATOR_HOST})`);
     initializeApp({
-        projectId: 'dataset-automator-local',
+        projectId: 'demo-no-project',
     });
 }
 
@@ -37,6 +37,7 @@ export interface MLJob {
     retries_count?: number;
     last_zod_error?: string;
     strategy_source?: 'human_validated' | 'self_healing' | 'fallback';
+    last_heartbeat?: string | number;
     
     // Nouveaux Agents
     adversarial_validation?: any;
@@ -73,7 +74,17 @@ export class FirestoreService {
     static async updateJobStatus(jobId: string, updates: Partial<MLJob>) {
         const jobRef = db.collection('ml_jobs').doc(jobId);
         updates.updated_at = new Date().toISOString();
-        await jobRef.update(updates);
+        try {
+            await jobRef.update(updates);
+        } catch (error: any) {
+            // Si le document n'existe pas (ex: redémarrage de l'émulateur), on le recrée via set avec merge: true
+            if (error.code === 5 || error.message.includes('NOT_FOUND') || error.message.includes('no entity to update')) {
+                logger.warn(`⚠️ Document ${jobId} non trouvé pour la mise à jour. Recréation via set(..., { merge: true }).`);
+                await jobRef.set(updates, { merge: true });
+            } else {
+                throw error;
+            }
+        }
     }
     
     static async getJob(jobId: string): Promise<MLJob | null> {

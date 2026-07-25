@@ -1,9 +1,4 @@
-# ── 0️⃣ SETUP — SÉRIE TEMPORELLE (CRISP-ML(Q)) ───────────────────
-
-## 0.1 Compréhension du Métier (Business Understanding)
-> **Objectif MLOps** : Aligner les métriques techniques avec la valeur métier.
-* Définissez ici les métriques de succès (ex: MAPE < 5% = optimisation des stocks de X€).
-* Identifier les contraintes : Horizon de prédiction, fréquence de mise à jour, explicabilité.
+# ⚙️ Étape 0 — Setup, Chargement & Split (Série Temporelle) (Cellule 1)
 
 ## 0.2 Configuration et Initialisation (Setup & Config)
 Configuration initiale du dataset temporel avec chemins absolus et découpage chronologique.
@@ -60,12 +55,15 @@ NB_DIR         = r"{NB_DIR}"
 DATE_COL       = "{DATE_COL}"
 NOM_BASE       = "{NOM_BASE}"
 TYPE_TACHE     = "{TYPE_TACHE}"
+IS_TS          = TYPE_TACHE in ["timeseries", "time_series"]
 
 # ✅ Création de l'arborescence MLOps stricte
 for d in [OUTPUT_DIR, RAW_DIR, PROCESSED_DIR, INTERIM_DIR, MODELS_DIR, NB_DIR]:
     os.makedirs(d, exist_ok=True)
 
 # ── Initialisation MLflow (Tracking) ─────────────────────────────────
+import os
+os.environ["MLFLOW_ALLOW_FILE_STORE"] = "true"
 from pathlib import Path
 mlflow_dir = Path(OUTPUT_DIR) / 'mlruns'
 mlflow.set_tracking_uri(mlflow_dir.as_uri())

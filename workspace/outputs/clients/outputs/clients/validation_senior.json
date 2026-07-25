@@ -1,0 +1,9 @@
+{
+    "Qualit\u00e9 des donn\u00e9es (EDA)": "\u2705 Valid\u00e9e",
+    "Traitement des manques (MNAR)": "\u2705 Inclus (MissingIndicator)",
+    "Pipeline Anti-Leakage": "\u2705 Garanti (Sklearn Pipelines)",
+    "Optimisation robuste": "\u2705 Optuna / Bayesian",
+    "IA de Confiance (Calibration)": "\u2705 Effectu\u00e9e",
+    "Explicabilit\u00e9 (SHAP/LIME)": "\u2705 Disponible",
+    "Pr\u00eat pour Production (MLOps)": "\u2705 Export\u00e9 (.joblib)"
+}

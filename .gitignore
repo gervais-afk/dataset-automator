@@ -30,6 +30,19 @@ firestore-debug.log
 .firebase/
 .genkit/
 
+# ML & Cache Artifacts
+*.db
+*.db.bak
+*.whl
+catboost_info/
+**/catboost_info/
+mlruns/
+**/mlruns/
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+py-executors/dataset_automator/
+ts-orchestrator/.ingested_files.json
+
 # IDE et OS
 .vscode/
 .idea/

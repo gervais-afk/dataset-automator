@@ -5,7 +5,7 @@ import neo4j from "neo4j-driver";
 import * as dotenv from "dotenv";
 dotenv.config();
 // Initialisation du driver Neo4j
-const driver = neo4j.driver(process.env.NEO4J_URI || "bolt://localhost:7687", neo4j.auth.basic(process.env.NEO4J_USER || "neo4j", process.env.NEO4J_PASSWORD || "password123"));
+const driver = neo4j.driver(process.env.NEO4J_URI || "bolt://127.0.0.1:7687", neo4j.auth.basic(process.env.NEO4J_USER || "neo4j", process.env.NEO4J_PASSWORD || "password123"));
 // Initialisation du serveur MCP
 const server = new Server({
     name: "neo4j-graph-rag-server",
