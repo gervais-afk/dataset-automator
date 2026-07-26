@@ -89,7 +89,7 @@ def export_graph_to_html(output_html_path: str = "knowledge_graph_view.html", li
 <html>
 <head>
   <meta charset="utf-8">
-  <title>SOVEREIGN.BI — Visualiseur de Graphe Neo4j</title>
+  <title>DATASET AUTOMATOR — Visualiseur de Graphe Neo4j</title>
   <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
   <style>
     body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background: #0f172a; color: #e2e8f0; }}
@@ -101,7 +101,7 @@ def export_graph_to_html(output_html_path: str = "knowledge_graph_view.html", li
 </head>
 <body>
   <header>
-    <h1>🕸️ SOVEREIGN.BI Knowledge Graph Explorer</h1>
+    <h1>🕸️ DATASET AUTOMATOR Knowledge Graph Explorer</h1>
     <div class="stats">Nœuds : <b>{len(nodes)}</b> | Relations : <b>{len(edges)}</b></div>
   </header>
   <div id="mynetwork"></div>
