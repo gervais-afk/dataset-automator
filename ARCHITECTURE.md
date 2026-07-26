@@ -56,8 +56,8 @@ erDiagram
     BusinessCost ||--|| Domain : APPLIES_TO
 ```
 
-* **Noeuds `Domain`** : Classification, Régression, Séries Temporelles, Clustering, Détection d'Anomalies, NLP, Computer Vision, Risk Portfolio, Causal Inference.
-* **Noeuds `Concept` & `PreprocessingRule`** : Formules mathématiques (ex: IMC), règles d'imputation (médiane/interpolation pour séries temporelles), gestion de la cardinalité.
+* **Noeuds `Domain`** : 33 domaines de données et MLOps (Classification, Régression, Clustering, Détection d'Anomalies, Séries Temporelles, NLP, Computer Vision, Analyse de Graphes, Inférence Causale, Apprentissage par Renforcement, Finance & Credit Scoring, Santé, BTP / Génie Civil, E-Commerce, RH, Cybersécurité).
+* **Noeuds `Concept` & `PreprocessingRule`** : Formules mathématiques (ex: IMC, Ratios Financiers), règles d'imputation adaptatives (médiane, interpolation, encodage catégoriel), et contrôle de cardinalité.
 * **Noeuds `InterpretationRule` & `BusinessCost`** : Seuils de recall minimum, pénalités financières pour faux positifs/faux négatifs, seuils d'overfitting.
 
 ---
