@@ -15,29 +15,29 @@
 
 ```mermaid
 graph TD
-    subgraph Ingestion ["📥 Multi-Modal Data Ingestion Layer"]
-        Tabular[📊 Tabular / CSV / Excel]
-        TimeSeries[📈 Time-Series Datasets]
-        SQLData[🐘 Relational Databases PostgreSQL / SQL]
-        TextDocs[📄 Unstructured Text & PDF Documents]
+    subgraph Ingestion ["Multi-Modal Data Ingestion Layer"]
+        Tabular["Tabular / CSV / Excel"]
+        TimeSeries["Time-Series Datasets"]
+        SQLData["Relational Databases PostgreSQL / SQL"]
+        TextDocs["Unstructured Text and PDF Documents"]
     end
 
-    subgraph Processing ["⚡ Automated Processing Engine"]
-        Cleaner[🧹 Data Cleaning & Normalization]
-        FeatureEng[🛠️ Automated Feature Engineering]
-        QualityAudit[🛡️ Data Drift & Quality Auditor]
+    subgraph Processing ["Automated Processing Engine"]
+        Cleaner["Data Cleaning and Normalization"]
+        FeatureEng["Automated Feature Engineering"]
+        QualityAudit["Data Drift and Quality Auditor"]
     end
 
-    subgraph Intelligence ["🧠 Knowledge Graph & MLOps Layer"]
-        Neo4jGraph[🕸️ Neo4j 5.20 Knowledge Graph Indexer]
-        MLflowTrack[📊 MLflow Metric Tracking & Lineage]
-        GenkitAgent[🤖 Firebase Genkit Agentic Reasoning]
+    subgraph Intelligence ["Knowledge Graph and MLOps Layer"]
+        Neo4jGraph["Neo4j 5.20 Knowledge Graph Indexer"]
+        MLflowTrack["MLflow Metric Tracking and Lineage"]
+        GenkitAgent["Firebase Genkit Agentic Reasoning"]
     end
 
-    subgraph Outputs ["📊 Automated Outputs & Insights"]
-        CleanData[💾 Cleaned & Enriched Datasets]
-        GraphInsights[🔍 GraphRAG Semantic Search]
-        AIReports[📋 Executive Markdown Insights]
+    subgraph Outputs ["Automated Outputs and Insights"]
+        CleanData["Cleaned and Enriched Datasets"]
+        GraphInsights["GraphRAG Semantic Search"]
+        AIReports["Executive Markdown Insights"]
     end
 
     Ingestion --> Processing
