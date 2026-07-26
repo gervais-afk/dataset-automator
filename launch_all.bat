@@ -18,11 +18,11 @@ if %errorlevel% neq 0 (
 
 echo.
 echo 2. Verification de l'environnement Python (.venv)...
-if not exist "py-executors\.venv\Scripts\python.exe" (
+if not exist "dataset_automator\py-executors\.venv\Scripts\python.exe" (
     echo [!] Environnement virtuel .venv non trouve. Installation avec uv...
-    cd py-executors
+    cd dataset_automator\py-executors
     uv sync
-    cd ..
+    cd ..\..
 ) else (
     echo [OK] Environnement Python .venv pret.
 )
@@ -31,19 +31,19 @@ echo.
 echo 3. Lancement des 5 Services dans des Terminaux Dédiés...
 
 echo    [1/5] Lancement de Firebase Emulators (Port 4000 / 8080)...
-start "🔥 Firebase Emulators" cmd /k "firebase emulators:start"
+start "🔥 Firebase Emulators" cmd /k "cd dataset_automator && firebase emulators:start"
 
 echo    [2/5] Lancement de MLflow UI (Port 5000)...
-start "📈 MLflow UI" cmd /k "cd workspace && ..\py-executors\.venv\Scripts\mlflow.exe ui --backend-store-uri sqlite:///mlflow.db --default-artifact-root file:///mlruns"
+start "📈 MLflow UI" cmd /k "cd dataset_automator\workspace && ..\py-executors\.venv\Scripts\mlflow.exe ui --backend-store-uri sqlite:///mlflow.db --default-artifact-root file:///mlruns"
 
 echo    [3/5] Lancement de Genkit Developer UI (Port 4000)...
-start "🧠 Genkit Developer UI" cmd /k "cd ts-orchestrator && npx genkit start"
+start "🧠 Genkit Developer UI" cmd /k "cd dataset_automator\ts-orchestrator && npx genkit start"
 
 echo    [4/5] Lancement du Dashboard Streamlit (Port 8501)...
-start "📊 Streamlit Control Center" cmd /k "cd py-executors && .venv\Scripts\streamlit.exe run src/app_dashboard.py"
+start "📊 Streamlit Control Center" cmd /k "cd dataset_automator\py-executors && .venv\Scripts\streamlit.exe run src/app_dashboard.py"
 
 echo    [5/5] Lancement de l'Orchestrateur TypeScript (Cerveau)...
-start "⚡ TS Orchestrator Pipeline" cmd /k "cd ts-orchestrator && npm run dev"
+start "⚡ TS Orchestrator Pipeline" cmd /k "cd dataset_automator\ts-orchestrator && npm run dev"
 
 echo.
 echo ===============================================================================

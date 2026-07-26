@@ -48,3 +48,4 @@ timeline
     Phase 4 : Validation visuelle des graphiques par l'API Vision locale de Gemma
     Phase 5 : Suivi et enregistrement des métriques dans MLflow
 ```
+
