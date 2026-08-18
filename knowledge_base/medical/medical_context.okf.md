@@ -1,24 +1,13 @@
 ---
-title: Contexte Métier Médical & Formules (OKF)
-domain: medical
 type: okf
-formulas:
-  - name: IMC
-    formula: "Weight / (Height ** 2)"
-    description: "Indice de Masse Corporelle (Body Mass Index) calculé à partir du poids (Weight) et de la taille (Height)."
-    target_column: IMC
-  - name: MAP
-    formula: "(SysBP + 2 * DiaBP) / 3"
-    description: "Pression Artérielle Moyenne (Mean Arterial Pressure) calculée à partir de la pression systolique (SysBP) et diastolique (DiaBP)."
-    target_column: MAP
-business_rules:
-  recall_priority: true
-  sensitive_attributes:
-    - Gender
-    - Age
-performance_thresholds:
-  min_f1_score: 0.80
-  min_recall: 0.85
+title: Contexte Métier Médical & Formules (OKF)
+description: Pression Artérielle Moyenne (Mean Arterial Pressure) calculée à partir de la pression systolique (SysBP) et diastolique (DiaBP).
+domain: medical
+generated: { by: "reference_agent/gemini-3.5-flash", at: "2026-08-14T14:00:00Z" }
+verified:
+  - { by: "human: Nelly Gervais (@gervais-afk)", at: "2026-08-14T15:00:00Z" }
+status: stable
+stale_after: 2027-08-14
 ---
 
 # Contexte Métier Médical & Formules (OKF)

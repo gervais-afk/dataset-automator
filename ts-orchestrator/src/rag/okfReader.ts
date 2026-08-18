@@ -25,7 +25,7 @@ export interface OKFContext {
 
 export class OKFReader {
   /**
-   * Lit et parse un fichier OKF (.okf.md) pour en extraire les règles métier et formules
+   * Reads and parses an OKF file (.okf.md) to extract business rules and formulas
    */
   static parse(filePath: string): OKFContext {
     if (!fs.existsSync(filePath)) {
@@ -42,7 +42,7 @@ export class OKFReader {
   }
 
   /**
-   * Parseur YAML basique et robuste gérant l'imbrication par indentation
+   * Basic and robust YAML parser handling nesting by indentation
    */
   private static parseYaml(yamlText: string): any {
     const lines = yamlText.split(/\r?\n/);
@@ -55,7 +55,7 @@ export class OKFReader {
 
       const indent = line.length - line.trimStart().length;
 
-      // Dépiler jusqu'au parent direct
+      // Pop stack down to the direct parent
       while (stack.length > 1 && (stack[stack.length - 1]?.indent ?? -1) >= indent) {
         stack.pop();
       }

@@ -114,12 +114,12 @@ axes[0].set_title(f'📈 {best_name} — Prédiction vs Réel (R²={r2_final:.4f
 axes[0].legend()
 axes[0].grid(True, alpha=0.3)
 
-# 2. Résidus dans le temps
+# 2. Residuals dans le temps
 axes[1].plot(idx, residus, color='#e74c3c', alpha=0.7, lw=1)
 axes[1].axhline(0, color='black', linestyle='--', lw=1)
 axes[1].axhline(2*residus.std(), color='gray', linestyle=':', label='+2σ')
 axes[1].axhline(-2*residus.std(), color='gray', linestyle=':', label='-2σ')
-axes[1].set_title('📊 Résidus dans le Temps')
+axes[1].set_title('📊 Residuals dans le Temps')
 axes[1].legend()
 axes[1].grid(True, alpha=0.3)
 
@@ -128,7 +128,7 @@ axes[2].hist(residus, bins=40, density=True, alpha=0.7, color='steelblue', edgec
 from scipy.stats import norm
 x_norm = np.linspace(residus.min(), residus.max(), 100)
 axes[2].plot(x_norm, norm.pdf(x_norm, residus.mean(), residus.std()), 'r-', lw=2, label='Normale')
-axes[2].set_title(f'📊 Distribution des Résidus (μ={residus.mean():.2f}, σ={residus.std():.2f})')
+axes[2].set_title(f'📊 Distribution des Residuals (μ={residus.mean():.2f}, σ={residus.std():.2f})')
 axes[2].legend()
 
 plt.tight_layout()
@@ -136,7 +136,7 @@ plt.savefig(os.path.join(OUTPUT_DIR, '04_ts_evaluation.png'), dpi=150, bbox_inch
 plt.show()
 ```
 
-## Diagnostic Résidus — Ljung-Box (Bruit Blanc)
+## Diagnostic Residuals — Ljung-Box (Bruit Blanc)
 
 ```python
 # ── Test de Ljung-Box : les résidus sont-ils du bruit blanc ? ────────
@@ -149,7 +149,7 @@ sample_res = residus[:5000] if len(residus) > 5000 else residus
 sw_stat, sw_p = shapiro(sample_res)
 print(f"\n📊 Shapiro-Wilk (Normalité des résidus)")
 print(f"   p-value : {sw_p:.6f}")
-print(f"   {'✅ Résidus NORMAUX' if sw_p > 0.05 else '❌ Résidus NON normaux'}")
+print(f"   {'✅ Residuals NORMAUX' if sw_p > 0.05 else '❌ Residuals NON normaux'}")
 
 # Ljung-Box avec Fallback Autocorrelation Plot
 try:
@@ -165,7 +165,7 @@ except Exception as e:
     print("   💡 Fallback : Vérification visuelle via ACF plot")
     from pandas.plotting import autocorrelation_plot
     autocorrelation_plot(pd.Series(residus))
-    plt.title("Autocorrélation des Résidus (Fallback)")
+    plt.title("Autocorrélation des Residuals (Fallback)")
     plt.show()
 
 # ── Residual Lag Plot (Autocorrelation visuelle) ─────────────────────
@@ -175,8 +175,8 @@ try:
     ax.scatter(residus[:-1], residus[1:], alpha=0.5, color='purple')
     ax.axhline(0, color='black', linestyle='--', lw=1)
     ax.axvline(0, color='black', linestyle='--', lw=1)
-    ax.set_xlabel("Résidus à l'instant t")
-    ax.set_ylabel("Résidus à l'instant t+1")
+    ax.set_xlabel("Residuals à l'instant t")
+    ax.set_ylabel("Residuals à l'instant t+1")
     ax.set_title('Residual Lag Plot (t vs t+1)')
     ax.grid(True, alpha=0.3)
     plt.tight_layout()

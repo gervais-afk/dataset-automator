@@ -8,15 +8,15 @@ const logger = pino({
   }
 });
 
-// Configure pour l'émulateur local par défaut
+// Configured for local emulator by default
 if (!getApps().length) {
-    // Par défaut, si l'environnement FIRESTORE_EMULATOR_HOST n'est pas défini, 
-    // on le force pour faciliter les tests locaux de l'utilisateur.
+    // By default, if FIRESTORE_EMULATOR_HOST is not set,
+    // we force it to facilitate local testing for the user.
     if (!process.env.FIRESTORE_EMULATOR_HOST) {
         process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
     }
     
-    logger.info(`🔥 Firebase Admin initialisé via l'Émulateur Local (${process.env.FIRESTORE_EMULATOR_HOST})`);
+    logger.info(`🔥 Firebase Admin initialized via Local Emulator (${process.env.FIRESTORE_EMULATOR_HOST})`);
     initializeApp({
         projectId: 'demo-no-project',
     });
@@ -39,7 +39,7 @@ export interface MLJob {
     strategy_source?: 'human_validated' | 'self_healing' | 'fallback';
     last_heartbeat?: string | number;
     
-    // Nouveaux Agents
+    // New Agents
     adversarial_validation?: any;
     explainability_audit?: any;
     
@@ -60,14 +60,14 @@ export class FirestoreService {
             dataset_name: datasetName,
             status: 'initialized',
             progress_percent: 0,
-            current_message: 'Job initialisé par l\'Orchestrateur TypeScript',
+            current_message: 'Job initialized by TypeScript Orchestrator',
             started_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             artifacts: {}
         };
         
         await jobRef.set(newJob);
-        logger.info(`📝 Job créé dans Firestore: ${jobId}`);
+        logger.info(`📝 Job created in Firestore: ${jobId}`);
         return jobId;
     }
 
@@ -77,9 +77,9 @@ export class FirestoreService {
         try {
             await jobRef.update(updates);
         } catch (error: any) {
-            // Si le document n'existe pas (ex: redémarrage de l'émulateur), on le recrée via set avec merge: true
+            // If the document doesn't exist (e.g., emulator restart), recreate it via set with merge: true
             if (error.code === 5 || error.message.includes('NOT_FOUND') || error.message.includes('no entity to update')) {
-                logger.warn(`⚠️ Document ${jobId} non trouvé pour la mise à jour. Recréation via set(..., { merge: true }).`);
+                logger.warn(`⚠️ Document ${jobId} not found for update. Recreating via set(..., { merge: true }).`);
                 await jobRef.set(updates, { merge: true });
             } else {
                 throw error;

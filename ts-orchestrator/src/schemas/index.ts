@@ -27,7 +27,7 @@ export const CleaningStrategySchema = z.object({
     steps: z.array(z.object({
       column: z.string(),
       action: z.enum(["drop", "impute_mean", "impute_median", "scale", "winsorize", "k_means", "encode", "sanitize_phone", "normalize_cam_geo", "clean_fcfa", "parse_momo", "pca", "add_time_features", "formula"]),
-      formula: z.string().optional().describe("Expression mathématique à évaluer (ex: 'Weight / (Height ** 2)')"),
+      formula: z.string().optional().describe("Mathematical expression to evaluate (e.g., 'Weight / (Height ** 2)')"),
       reasoning: z.string().optional().describe("Agent's justification for logging")
     }))
 });

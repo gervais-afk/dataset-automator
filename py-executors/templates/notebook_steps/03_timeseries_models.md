@@ -1,4 +1,4 @@
-# 🏆 Benchmarking Modèles de Séries Temporelles (Forecasting)
+# 🏆 Benchmarking Modèles de Time Series (Forecasting)
 
 Objectif : Comparer les baselines naïves, les modèles statistiques classiques (SARIMAX) et les modèles de Machine Learning (XGBoost/LightGBM) basés sur les variables de lag et les fenêtres glissantes.
 

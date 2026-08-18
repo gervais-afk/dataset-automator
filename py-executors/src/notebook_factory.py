@@ -1,6 +1,6 @@
 """
-Assemblage de notebooks Jupyter depuis des templates Markdown.
-Gère la substitution des variables et la construction des cellules.
+Assembly of Jupyter notebooks from Markdown templates.
+Handles variable substitution and cell construction.
 """
 
 import re
@@ -9,15 +9,15 @@ import nbformat
 import sys
 import os
 from pathlib import Path
-from typing  import Optional, Tuple
+from typing import Optional, Tuple
 import pandas as pd
 import numpy as np
 
-# Import local pour le routing intelligent
+# Local import for smart routing
 try:
     from tools.domain_detector import DataProfile, build_data_profile
 except ImportError:
-    # Fallback si non trouvé
+    # Fallback if not found
     class DataProfile: pass
     def build_data_profile(df, filename): return DataProfile()
 
@@ -25,25 +25,25 @@ _STEPS_DIR = Path(__file__).resolve().parent.parent / "templates" / "notebook_st
 
 
 # ══════════════════════════════════════════════════════════════════
-# SUBSTITUTION DES VARIABLES
+# VARIABLE SUBSTITUTION
 # ══════════════════════════════════════════════════════════════════
 
 def _substitute_vars(content: str, variables: dict) -> str:
-    """Substitue TOUS les placeholders {VAR} dans un template Markdown."""
+    """Substitutes ALL {VAR} placeholders in a Markdown template."""
     result = content
     for key, value in variables.items():
         placeholder = "{" + key + "}"
         result      = result.replace(placeholder, str(value))
 
-    # ✅ CORRECTION : Variables dynamiques à exclure de la validation (définies à l'exécution)
+    # Dynamic variables to exclude from validation (defined at runtime)
     DYNAMIC_VARS = {'NEEDS_DIFF', 'adf_result', 'p_value', 'TARGET_COL', 'DATE_COL', 'EVAL_PLOT'}
     
-    # Signalement des oublis (Variables en MAJUSCULES uniquement)
+    # Report unreplaced uppercase variables
     remaining = re.findall(r'\{([A-Z][A-Z0-9_]{2,})\}', result)
     remaining = set(remaining) - DYNAMIC_VARS
     
     if remaining:
-        print(f"   ⚠️  Placeholders non substitués : {remaining}", file=sys.stderr)
+        print(f"   ⚠️  Unsubstituted placeholders: {remaining}", file=sys.stderr)
     return result
 
 
@@ -423,7 +423,8 @@ def assemble_notebook_from_steps(
             dataset_name=nom_base,
             target_col=target_col,
             business_costs=business_costs,
-            df=df_local
+            df=df_local,
+            llm_interpretation=llm_interpretation
         )
         nb.cells.append(nbformat.v4.new_markdown_cell(header_md))
         total_cells += 1

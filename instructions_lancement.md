@@ -1,101 +1,123 @@
-# 🚀 Guide de Lancement Rapide — Dataset Automator
+# 🚀 Guide de Lancement Rapide — Dataset Automator v4.0
 
-Ce document regroupe les instructions pour lancer et piloter l'application complète **Dataset Automator**, soit en **1 clic automatisé**, soit via les terminaux modulaires.
+Ce document regroupe les instructions pour lancer et piloter la plateforme **Dataset Automator**, soit en **1 clic automatisé**, soit via les terminaux modulaires.
 
 ---
 
 ## ⚡ Option 1 : Lancement Automatisé en 1 Clic (Recommandé)
 
-Pour lancer automatiquement **tous les services** dans des fenêtres de terminal dédiées (afin de conserver une visibilité totale sur les logs et erreurs en temps réel) :
+Pour lancer automatiquement **tous les services** dans des fenêtres de terminal dédiées (afin de conserver une visibilité totale sur les logs et traces en temps réel) :
 
 Faites simplement un double-clic sur :
 👉 **`launch_all.bat`** (situé à la racine du projet).
 
 Ou en ligne de commande PowerShell :
 ```powershell
-cd "C:\Users\HP\cam_data_sov_solutions newversion"
+cd "c:\Users\HP\Desktop\Notebooks factory"
 .\launch_all.bat
 ```
 
 ### 🌐 Interfaces Web Ouvertes Automatiquement :
-*   **Dashboard Streamlit (Interface Métier) :** [http://localhost:8501](http://localhost:8501)
-*   **MLflow UI (Tracking & Modèles) :** [http://localhost:5000](http://localhost:5000)
-*   **Genkit UI (Traces & Logs IA) :** [http://localhost:4000](http://localhost:4000)
-*   **Neo4j Web Browser (Knowledge Graph) :** [http://localhost:7474](http://localhost:7474)
+* **Dashboard Streamlit (Interface Métier & Canvas Spatial) :** [http://localhost:8501](http://localhost:8501)
+* **MLflow UI (Tracking, Modèles & Artefacts) :** [http://localhost:5000](http://localhost:5000)
+* **Genkit UI (Traces & Raisonnement Multi-Agents) :** [http://localhost:4000](http://localhost:4000)
+* **Neo4j Web Browser (Graphe de Connaissances OKF) :** [http://localhost:7474](http://localhost:7474)
 
 ---
 
-## 🛠️ Prérequis (Logiciels de bureau à lancer)
-1. **Docker Desktop** : Assurez-vous que Docker est démarré. (Le conteneur Neo4j `neo4j:latest` tourne sur `bolt://127.0.0.1:7687`).
-2. **LM Studio** : Lancez l'application, chargez le modèle `google/gemma-4-12b` et démarrez le serveur local API (port `1234`).
+## 🛠️ Prérequis Système
+
+1. **Docker Desktop** : Assurez-vous que Docker est démarré. (Le conteneur Neo4j `neo4j:latest` tourne sur `bolt://127.0.0.1:7687` avec mot de passe `password123`).
+2. **Environnement Python (`.venv`)** : Installé automatiquement via `uv sync` dans `py-executors/`.
 
 ---
 
-## 🖥️ Rôle des 5 Terminaux Dédiés (Lancement Manuel ou Automatisé)
+## 🖥️ Rôle des 5 Terminaux Dédiés (Lancement Modulaire Manuel)
 
-### ⬛ Terminal 1 : Firebase Emulator (Base de données locale & Auth)
-*Utilité : Gère l'authentification et l'état des tâches (`jobId`) dans Firestore.*
+Si vous préférez lancer chaque composant individuellement :
+
+### ⬛ Terminal 1 : Firebase Emulator (Base locale & Gestion d'état des Jobs)
+*Utilité : Gère l'authentification et l'état asynchrone des tâches (`jobId`) dans Firestore.*
 ```powershell
-cd "C:\Users\HP\cam_data_sov_solutions newversion\dataset_automator"
+cd "c:\Users\HP\Desktop\Notebooks factory\dataset_automator"
 firebase emulators:start
 ```
 
 ---
 
-### ⬛ Terminal 2 : MLflow UI (Tracking & Métriques)
-*Utilité : Interface Web pour voir les courbes de performances, Optuna et les artefacts MLOps.*
+### ⬛ Terminal 2 : Serveur MLflow (Tracking & Métriques)
+*Utilité : Enregistrement des runs d'expériences, métriques de cross-validation et sérialisation SKOPS.*
 ```powershell
-cd "C:\Users\HP\cam_data_sov_solutions newversion\dataset_automator\workspace"
-..\py-executors\.venv\Scripts\mlflow.exe ui --backend-store-uri sqlite:///mlflow.db --default-artifact-root file:///mlruns
+cd "c:\Users\HP\Desktop\Notebooks factory\dataset_automator\workspace"
+..\py-executors\.venv\Scripts\mlflow.exe ui --backend-store-uri sqlite:///mlflow.db --default-artifact-root file:///mlruns --port 5000
 ```
-*(Note : Si une erreur de schéma MLflow apparaît après mise à jour, supprimez simplement le fichier `mlflow.db` dans `workspace` pour réinitialiser le schéma).*
 
 ---
 
-### ⬛ Terminal 3 : Genkit Developer UI (Traces & Raisonnement LLM)
-*Utilité : Permet de visualiser en temps réel les prompts, les appels d'outils (`replInterpreter`, `graphRAGReasoner`) et les erreurs LLM.*
+### ⬛ Terminal 3 : Genkit Developer UI (Traces & Observabilité)
+*Utilité : Visualisation des traces d'exécution de l'orchestrateur, des prompts et des appels d'outils FastMCP.*
 ```powershell
-cd "C:\Users\HP\cam_data_sov_solutions newversion\dataset_automator\ts-orchestrator"
+cd "c:\Users\HP\Desktop\Notebooks factory\dataset_automator\ts-orchestrator"
 npx genkit start
 ```
 
 ---
 
 ### ⬛ Terminal 4 : L'Orchestrateur TypeScript (Cerveau du Pipeline)
-*Utilité : Cerveau principal qui exécute les 7 phases du workflow MLOps.*
+*Utilité : Moteur décisionnel principal orchestrant les 7 phases du cycle CRISP-ML(Q).*
 ```powershell
-cd "C:\Users\HP\cam_data_sov_solutions newversion\dataset_automator\ts-orchestrator"
+cd "c:\Users\HP\Desktop\Notebooks factory\dataset_automator\ts-orchestrator"
 npm run dev
 ```
-👉 **Attente de votre saisie :** Dès le démarrage, le terminal affiche la liste des datasets disponibles. Tapez le numéro du choix (ex: **`7`** pour `test_cameroun_business.csv`) et appuyez sur **Entrée** pour démarrer l'exécution.
 
 ---
 
-### ⬛ Terminal 5 : Dashboard Web Streamlit Central
-*Utilité : Interface utilisateur pour déposer un CSV, suivre la progression, consulter SHAP, explorer le Knowledge Graph et télécharger le Notebook MLOps `.ipynb`.*
+### ⬛ Terminal 5 : Dashboard Streamlit Central (Control Center)
+*Utilité : Interface utilisateur complète (Canvas Spatial SVG, Copilot chatbot, PAIR What-If Tool, Google Model Card, Red Teamer, et Validateur de Notebooks 100/100).*
 ```powershell
-cd "C:\Users\HP\cam_data_sov_solutions newversion\dataset_automator\py-executors"
+cd "c:\Users\HP\Desktop\Notebooks factory\dataset_automator\py-executors"
 & ".venv\Scripts\streamlit.exe" run src/app_dashboard.py
 ```
 
 ---
 
-## 🛠️ Nouveaux Outils & Scripts Spécialisés
+## 🔬 Nouveaux Outils & Scripts d'Audit Autonomes
 
-### 🚨 1. Détecteur de Data Drift & Surveillance Statistique
-*Utilité : Compare un dataset d'entraînement avec un dataset de production pour détecter les dérives (KS-test / PSI).*
+### 📊 1. Générateur de Rapport HTML MLOps Visuel & Interactif
+*Utilité : Produit un rapport web autonome incluant la galerie des figures, le journal d'auto-correction et le reçu cryptographique.*
 ```powershell
-cd "C:\Users\HP\cam_data_sov_solutions newversion\dataset_automator\py-executors"
-& ".venv\Scripts\python.exe" src/tools/data_drift_detector.py --ref "data/reference.csv" --curr "data/production.csv"
+cd "c:\Users\HP\Desktop\Notebooks factory\dataset_automator\py-executors"
+& ".venv\Scripts\python.exe" src/visual_report_generator.py
 ```
-*(En cas de dérive majeure > 30%, une alerte `(:Alert)` est automatiquement enregistrée dans Neo4j).*
+
+### 🛡️ 2. Validateur Forensic de Notebooks CRISP-ML (Score 100/100)
+*Utilité : Audit statique et dynamique du notebook Jupyter généré pour certifier l'absence de fuite de données.*
+```powershell
+cd "c:\Users\HP\Desktop\Notebooks factory\dataset_automator\py-executors"
+& ".venv\Scripts\python.exe" src/notebook_validator.py
+```
+
+### 🚨 3. Détecteur de Data Drift (KS-Test & PSI)
+*Utilité : Vérification de la stabilité temporelle des distributions et alertes de dérive.*
+```powershell
+cd "c:\Users\HP\Desktop\Notebooks factory\dataset_automator\py-executors"
+& ".venv\Scripts\python.exe" src/drift_monitor.py
+```
 
 ---
 
-### 🕸️ 2. Visualisateur de Graphe Neo4j (HTML Interactif)
-*Utilité : Exporte la vue HTML 2D/3D dynamique du Knowledge Graph Neo4j.*
+## ☁️ Option 2 : Déploiement Production en 1 Clic sur Google Cloud Run
+
+Pour déployer l'application complète sur **Google Cloud Run** et fournir une URL HTTPS publique accessible en direct par le jury Devpost :
+
 ```powershell
-cd "C:\Users\HP\cam_data_sov_solutions newversion\dataset_automator\py-executors"
-& ".venv\Scripts\python.exe" ..\workspace\visualize_graph.py
+cd "c:\Users\HP\Desktop\Notebooks factory\dataset_automator"
+.\scripts\deploy_cloud_run.ps1
 ```
-*(Génère `dataset_automator/workspace/knowledge_graph_view.html` consultable directement dans le Dashboard Streamlit).*
+
+*Ce script effectue automatiquement :*
+1. L'activation des APIs Google Cloud (`run`, `cloudbuild`, `aiplatform`, `bigquery`).
+2. La création du compte de service IAM sécurisé `dataset-automator-runner`.
+3. L'attribution des rôles Vertex AI & BigQuery.
+4. La compilation de l'image Docker et le déploiement Cloud Run managé avec autoscaling (0 à 5 instances).
+5. L'affichage de l'URL publique HTTPS prête pour le jury du Hackathon !

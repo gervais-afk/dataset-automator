@@ -59,42 +59,104 @@ GOLDEN_DATASET = [
     }
 ]
 
+def load_env():
+    import os
+    env_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.env"))
+    if os.path.exists(env_path):
+        with open(env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if "=" in line:
+                    k, v = line.split("=", 1)
+                    os.environ[k.strip()] = v.strip().strip("'\"")
+
 def query_local_llm(prompt: str) -> str:
-    """Interroge le modèle local google/gemma-4-12b-qat sur LM Studio."""
-    url = "http://127.0.0.1:1234/v1/chat/completions"
-    headers = {"Content-Type": "application/json"}
+    """Interroge OpenRouter Cloud LLMs (Gemini 3.5 Flash avec fallback Gemma 4)."""
+    load_env()
+    provider = os.getenv("LLM_PROVIDER", "local")
+    api_key = os.getenv("OPENROUTER_API_KEY", "")
+    primary_model = os.getenv("PRIMARY_MODEL", "google/gemini-3.5-flash")
+    fallback_model = os.getenv("FALLBACK_MODEL", "google/gemma-4-26b-a4b-it")
     
-    payload = {
-        "model": "google/gemma-4-12b-qat",
-        "messages": [
-            {
-                "role": "system",
-                "content": (
-                    "Tu es un agent expert en nettoyage de données. "
-                    "Réponds UNIQUEMENT avec la valeur nettoyée et normalisée. "
-                    "Pas de phrases explicatives, pas d'enrobage, juste la valeur brute finale."
-                )
-            },
-            {"role": "user", "content": prompt}
-        ],
-        "temperature": 0.1,
-        "max_tokens": 100
-    }
-    
-    try:
-        response = requests.post(url, json=payload, headers=headers, timeout=30)
-        response.raise_for_status()
-        result = response.json()
-        return result["choices"][0]["message"]["content"].strip()
-    except Exception as e:
-        print(f"❌ Erreur lors de l'appel LM Studio : {e}", file=sys.stderr)
-        return ""
+    if provider == "openrouter":
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+            "HTTP-Referer": "http://localhost:3000",
+            "X-Title": "Dataset Automator"
+        }
+        
+        payload = {
+            "model": primary_model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an expert data cleaning agent. "
+                        "Respond ONLY with the cleaned and normalized value. "
+                        "No explanations, no wrapper, just the final raw value."
+                    )
+                },
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.1,
+            "max_tokens": 1024
+        }
+        
+        try:
+            url = "https://openrouter.ai/api/v1/chat/completions"
+            response = requests.post(url, json=payload, headers=headers, timeout=30)
+            response.raise_for_status()
+            result = response.json()
+            return result["choices"][0]["message"]["content"].strip()
+        except Exception as e:
+            print(f"⚠️ Primary model Gemini failed in evaluation: {e}. Trying fallback Gemma 4...", file=sys.stderr)
+            
+            payload_fallback = payload.copy()
+            payload_fallback["model"] = fallback_model
+            
+            try:
+                response = requests.post(url, json=payload_fallback, headers=headers, timeout=30)
+                response.raise_for_status()
+                result = response.json()
+                return result["choices"][0]["message"]["content"].strip()
+            except Exception as fe:
+                print(f"❌ Fallback model Gemma 4 also failed in evaluation: {fe}", file=sys.stderr)
+                return ""
+    else:
+        url = "http://127.0.0.1:1234/v1/chat/completions"
+        headers = {"Content-Type": "application/json"}
+        payload = {
+            "model": "google/gemma-4-12b-qat",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "Tu es un agent expert en nettoyage de données. Réponds UNIQUEMENT avec la valeur nettoyée. Pas de phrases explicatives."
+                },
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.1,
+            "max_tokens": 100
+        }
+        try:
+            response = requests.post(url, json=payload, headers=headers, timeout=30)
+            response.raise_for_status()
+            return response.json()["choices"][0]["message"]["content"].strip()
+        except Exception as e:
+            print(f"❌ Erreur lors de l'appel LM Studio : {e}", file=sys.stderr)
+            return ""
 
 def evaluate_agent():
-    print("🚀 Démarrage de l'évaluation de l'agent local...")
+    load_env()
+    provider = os.getenv("LLM_PROVIDER", "local")
+    model_name = os.getenv("PRIMARY_MODEL", "google/gemini-3.5-flash") if provider == "openrouter" else "google/gemma-4-12b-qat"
     
-    with mlflow.start_run(run_name=f"Eval_Gemma_4_12b_{int(time.time())}"):
-        mlflow.log_param("model_name", "google/gemma-4-12b-qat")
+    print(f"🚀 Démarrage de l'évaluation de l'agent ({model_name})...")
+    
+    with mlflow.start_run(run_name=f"Eval_{model_name.replace('/', '_')}_{int(time.time())}"):
+        mlflow.log_param("model_name", model_name)
         mlflow.log_param("dataset_size", len(GOLDEN_DATASET))
         mlflow.log_param("temperature", 0.1)
         

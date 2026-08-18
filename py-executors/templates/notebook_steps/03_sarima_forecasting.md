@@ -1,4 +1,4 @@
-# 🏆 Modélisation des Séries Temporelles avec SARIMA (AutoARMA)
+# 🏆 Modélisation des Time Series avec SARIMA (AutoARMA)
 
 Objectif : Utiliser des modèles statistiques de pointe optimisés automatiquement pour capturer la cyclicité et la tendance du marché financier. Contrairement aux approches basiques, nous utilisons `statsforecast` et `AutoARMA` pour trouver la configuration optimale.
 

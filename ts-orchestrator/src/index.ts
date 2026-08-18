@@ -1,4 +1,5 @@
 console.log("=== SCRIPT STARTED ===");
+import './pre-start';
 import { genkit, z } from 'genkit';
 // Import openAI plugin removed since we use a custom model
 import { execSync, spawn } from 'child_process';
@@ -33,65 +34,65 @@ function buildInterpretationPrompt(
   let rulesText = "";
   if (interpretationRules && interpretationRules.length > 0) {
     rulesText = interpretationRules.map(r => 
-      `- Règle [${r.name}] : ${r.description}\n  * Directives : ${r.guideline}\n  * Impact Métier : ${r.business_impact}`
+      `- Rule [${r.name}]: ${r.description}\n  * Guidelines: ${r.guideline}\n  * Business Impact: ${r.business_impact}`
     ).join("\n");
   } else {
-    rulesText = "Aucune règle d'interprétation spécifique de Neo4j disponible. Utilise les standards de l'état de l'art.";
+    rulesText = "No specific Neo4j interpretation rules available. Use state-of-the-art standards.";
   }
 
-  let visionText = "Aucune anomalie visuelle détectée.";
+  let visionText = "No visual anomaly detected.";
   if (visionResult) {
     const issues = visionResult.additionalIssues || [];
     const patterns = visionResult.visualPatterns || [];
-    visionText = `Statut de l'image de rendu : ${visionResult.confirmsMetrics ? 'Cohérent avec les métriques' : 'Anomalies détectées'}\n` +
-                 `Motifs détectés : ${patterns.join(', ')}\n` +
-                 `Alertes levées : ${issues.join(', ')}`;
+    visionText = `Rendered chart status: ${visionResult.confirmsMetrics ? 'Consistent with metrics' : 'Anomalies detected'}\n` +
+                 `Detected patterns: ${patterns.join(', ')}\n` +
+                 `Raised alerts: ${issues.join(', ')}`;
   }
 
-  let businessCostsText = "Aucun coût financier métier de référence fourni.";
+  let businessCostsText = "No reference business financial costs provided.";
   if (businessCosts) {
-    businessCostsText = `Coûts financiers métiers calculés pour ce projet :
-    - Faux Positif (FP) / Fausse alerte : - ${businessCosts.cost_FP} ${businessCosts.currency}
-    - Faux Négatif (FN) / Défaut ou anomalie manquée : - ${businessCosts.cost_FN} ${businessCosts.currency}
-    - Vrai Positif (TP) / Décision correcte : + ${businessCosts.gain_TP} ${businessCosts.currency}
+    businessCostsText = `Business financial costs calculated for this project:
+    - False Positive (FP) / False alarm: - ${businessCosts.cost_FP} ${businessCosts.currency}
+    - False Negative (FN) / Missed default or anomaly: - ${businessCosts.cost_FN} ${businessCosts.currency}
+    - True Positive (TP) / Correct decision: + ${businessCosts.gain_TP} ${businessCosts.currency}
     
-    Règle ROI : Calcule et commente explicitement l'impact financier estimé en appliquant ces coûts aux erreurs réelles du modèle (ex: FP et FN de la matrice de confusion si disponible ou taux d'erreur sur le test set). Traduis les métriques de performance techniques en gains financiers nets ou pertes évitées.`;
+    ROI Rule: Calculate and explicitly comment on the estimated financial impact by applying these costs to actual model errors (e.g., FP and FN from confusion matrix if available, or test set error rate). Translate technical metrics into net financial gains or avoided losses.`;
   }
   let fairnessText = "";
   if (metrics && metrics.fairness) {
     const f = metrics.fairness;
-    fairnessText = `\n--- ÉVALUATION DE L'ÉQUITÉ (FAIRNESS GUARDRAIL) ---
-    Attribut sensible identifié : "${f.sensitive_attribute}"
-    Disparate Impact Ratio calculé : ${f.disparate_impact_ratio.toFixed(3)}
-    Taux de sélection par groupe : ${JSON.stringify(f.selection_rates)}
+    fairnessText = `\n--- FAIRNESS EVALUATION (FAIRNESS GUARDRAIL) ---
+    Identified sensitive attribute: "${f.sensitive_attribute}"
+    Calculated Disparate Impact Ratio: ${f.disparate_impact_ratio.toFixed(3)}
+    Selection rates by group: ${JSON.stringify(f.selection_rates)}
     
-    Consigne Équité : Commente obligatoirement ce disparate impact ratio dans ton rapport sous forme d'un paragraphe dédié à l'éthique et à l'équité du modèle. Une valeur en dehors de [0.8, 1.25] indique un biais potentiel du modèle en faveur ou défaveur d'un groupe.`;
+    Fairness Guideline: You must comment on this disparate impact ratio in your report in a dedicated ethics & fairness paragraph. A value outside [0.8, 1.25] indicates potential model bias.`;
   }
 
-  return `Tu es un Data Scientist Senior spécialisé en audit de modèles d'IA.
-Analyse les résultats d'évaluation du modèle pour rédiger le rapport d'explicabilité et d'interprétation finale du projet.
+  return `You are a Senior Data Scientist specializing in AI model auditing.
+Analyze the model evaluation results to write the explainability and final interpretation report for the project.
 
---- CONTEXTE ---
-Domaine métier : ${domain}
-Type de tâche : ${taskType}
+--- CONTEXT ---
+Business Domain: ${domain}
+Task Type: ${taskType}
 
---- IMPACT FINANCIER ET COÛTS MÉTIERS ---
+--- FINANCIAL IMPACT AND BUSINESS COSTS ---
 ${businessCostsText}
 ${fairnessText}
 
---- DIRECTIVES D'INTERPRÉTATION METIER (Extraites de Neo4j) ---
+--- BUSINESS INTERPRETATION GUIDELINES (Extracted from Neo4j) ---
 ${rulesText}
 
---- RÉSULTATS D'ÉVALUATION ---
-Métriques réelles : ${JSON.stringify(metrics, null, 0)}
-Analyse du graphique d'évaluation :
+--- EVALUATION RESULTS ---
+Real Metrics: ${JSON.stringify(metrics, null, 0)}
+Evaluation Chart Analysis:
 ${visionText}
 
---- INSTRUCTIONS DE RÉDACTION ---
-1. Rédige un rapport qualitatif d'interprétation sous forme de Markdown en français (environ 2-3 paragraphes).
-2. Ne commente pas le code technique. Explique ce que ces chiffres et graphiques signifient concrètement pour le métier, la prise de décision et l'impact financier net.
-3. Sois direct, factuel et rigoureux. Applique de manière stricte et explicite les directives de Neo4j si les métriques franchissent des seuils critiques (comme un déséquilibre de rappel ou un overfitting).
-4. Reste professionnel. Ne mets pas d'introduction ou de conclusion bavarde, commence directement par le texte du rapport (pas de "Voici le rapport...", commence directement par le titre ou le contenu).
+--- REPORTING INSTRUCTIONS ---
+1. Write a qualitative interpretation report formatted in Markdown in English (approx. 2-3 paragraphs).
+2. Do not comment on technical code. Explain what these numbers and charts mean concretely for the business, decision-making, and net financial impact.
+3. Be direct, factual, and rigorous. Strictly apply Neo4j guidelines if metrics cross critical thresholds (such as recall imbalance or overfitting).
+4. Remain professional. Do not add conversational introductions or conclusions, start directly with the report content.
 `;
 }
 
@@ -112,7 +113,7 @@ const spawnedProcesses: any[] = [];
 const activeTransports: any[] = [];
 
 function cleanupActiveProcesses() {
-  console.log("\n🧹 [Nettoyage] Arrêt propre de tous les processus Python et connexions MCP...");
+  console.log("\n🧹 [Cleanup] Clean shutdown of all Python processes and MCP connections...");
   
   for (const proc of spawnedProcesses) {
     try {
@@ -138,7 +139,7 @@ process.on('SIGTERM', () => {
   process.exit(0);
 });
 
-// Helper pour exécuter python de manière asynchrone sans bloquer l'Event Loop
+// Helper to execute Python asynchronously without blocking the Event Loop
 async function runPythonAsync(command: string, args: string[], cwd: string, jobId?: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const pyProcess = spawn(command, args, { cwd });
@@ -157,13 +158,13 @@ async function runPythonAsync(command: string, args: string[], cwd: string, jobI
             const lastHbTime = new Date(job.last_heartbeat).getTime();
             const now = Date.now();
             if (now - lastHbTime > HEARTBEAT_TIMEOUT_MS) {
-              logger.error(`❌ Worker Python (Job ${jobId}) ne répond plus (Timeout > 60s). Arrêt forcé (SIGKILL).`);
+              logger.error(`❌ Worker Python (Job ${jobId}) is no longer responding (Timeout > 60s). Forcing shutdown (SIGKILL).`);
               
               pyProcess.kill('SIGKILL');
               
               await FirestoreService.updateJobStatus(jobId, {
                 status: 'failed',
-                current_message: 'Erreur: Le traitement Python a planté silencieusement (OOM/Deadlock). Timeout Heartbeat atteint.'
+                current_message: 'Error: Python execution crashed silently (OOM/Deadlock). Heartbeat timeout reached.'
               });
               
               if (monitorInterval) clearInterval(monitorInterval);
@@ -171,7 +172,7 @@ async function runPythonAsync(command: string, args: string[], cwd: string, jobI
             }
           }
         } catch (e) {
-          logger.warn(`Erreur lors du monitoring heartbeat: ${e}`);
+          logger.warn(`Error during heartbeat monitoring: ${e}`);
         }
       }, 15000); // Check every 15s
     }
@@ -215,7 +216,7 @@ const localGemmaModel = ai.defineModel(
     name: 'lmstudio/gemma-4-12b',
   },
   async (request) => {
-    logger.info("🤖 Modèle IA appelé par Genkit");
+    logger.info("🤖 AI Model invoked by Genkit");
     
     // Convert all Genkit messages into standard chat completion messages
     const chatMessages = (request.messages || []).map(msg => {
@@ -231,47 +232,110 @@ const localGemmaModel = ai.defineModel(
       };
     });
 
-    const activeModel = await getActiveModelName();
-    logger.info(`📡 Envoi de la requête à LM Studio (modèle: ${activeModel})... Nombre de messages : ${chatMessages.length}.`);
-    if (chatMessages.length > 0) {
-      const lastMsg = chatMessages[chatMessages.length - 1];
-      if (lastMsg && lastMsg.content) {
-        logger.debug({ lastMessageContent: lastMsg.content.substring(0, 500) + "..." }, "Dernier message envoyé");
+    const provider = process.env.LLM_PROVIDER || 'local';
+    const apiKey = process.env.OPENROUTER_API_KEY || '';
+    const primaryModel = process.env.PRIMARY_MODEL || 'google/gemini-3.5-flash';
+    const fallbackModel = process.env.FALLBACK_MODEL || 'google/gemma-4-26b-a4b-it';
+
+    if (provider === 'openrouter') {
+      logger.info(`📡 [OpenRouter] Sending request to OpenRouter... Messages count: ${chatMessages.length}.`);
+      let modelToUse = primaryModel;
+      let attempt = 1;
+      let response;
+      
+      try {
+        logger.info(`📡 [OpenRouter] Attempt 1: calling Gemini 3.5 Flash (${primaryModel})...`);
+        response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
+          model: primaryModel,
+          messages: chatMessages,
+          temperature: request.config?.temperature || 0.2,
+          max_tokens: request.config?.maxOutputTokens || 1024,
+        }, {
+          timeout: 180000, // 3 minutes timeout for OpenRouter
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+            'HTTP-Referer': 'http://localhost:3000',
+            'X-Title': 'Dataset Automator'
+          }
+        });
+      } catch (err: any) {
+        const errMsg = err.response ? `HTTP ${err.response.status} - ${JSON.stringify(err.response.data)}` : (err.message || err);
+        logger.warn(`⚠️ [OpenRouter] Primary model Gemini failed: ${errMsg}`);
+        logger.warn(`🔄 [OpenRouter] Attempt 2: falling back to Gemma 4 (${fallbackModel})...`);
+        
+        try {
+          response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
+            model: fallbackModel,
+            messages: chatMessages,
+            temperature: request.config?.temperature || 0.2,
+            max_tokens: request.config?.maxOutputTokens || 1024,
+          }, {
+            timeout: 180000,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`,
+              'HTTP-Referer': 'http://localhost:3000',
+              'X-Title': 'Dataset Automator'
+            }
+          });
+          modelToUse = fallbackModel;
+        } catch (fallbackErr: any) {
+          const fallbackErrMsg = fallbackErr.response ? `HTTP ${fallbackErr.response.status} - ${JSON.stringify(fallbackErr.response.data)}` : (fallbackErr.message || fallbackErr);
+          logger.error(`❌ [OpenRouter] Fallback model Gemma 4 also failed: ${fallbackErrMsg}`);
+          throw fallbackErr;
+        }
       }
-    }
 
-    try {
-      const response = await axios.post('http://127.0.0.1:1234/v1/chat/completions', {
-        model: activeModel,
-        messages: chatMessages,
-        temperature: request.config?.temperature || 0.2,
-        max_tokens: request.config?.maxOutputTokens || 1024,
-        repetition_penalty: 1.1  // Évite les boucles de répétition (????...) sur LLaMA local
-      }, {
-        timeout: 2700000, // 45 minutes maximum (pour permettre un raisonnement clair et abouti)
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      logger.info("✅ Réponse reçue de LM Studio !");
+      logger.info(`✅ [OpenRouter] Response received using model: ${modelToUse}`);
       const replyContent = response.data.choices[0].message.content || "";
-      logger.debug({ replyContent: replyContent.substring(0, 500) + "..." }, "Réponse brute du modèle");
-
       return {
         message: {
           role: 'model',
           content: [{ text: replyContent }]
         }
       };
-    } catch (err: any) {
-      const errMsg = err.response ? `HTTP ${err.response.status} - ${JSON.stringify(err.response.data)}` : (err.message || err);
-      logger.error(`❌ Erreur lors de l'appel à LM Studio : ${errMsg}`);
-      throw err;
+    } else {
+      const activeModel = await getActiveModelName();
+      logger.info(`📡 Sending request to LM Studio (modèle: ${activeModel})... Nombre de messages : ${chatMessages.length}.`);
+      if (chatMessages.length > 0) {
+        const lastMsg = chatMessages[chatMessages.length - 1];
+        if (lastMsg && lastMsg.content) {
+          logger.debug({ lastMessageContent: lastMsg.content.substring(0, 500) + "..." }, "Last message sent");
+        }
+      }
+
+      try {
+        const response = await axios.post('http://127.0.0.1:1234/v1/chat/completions', {
+          model: activeModel,
+          messages: chatMessages,
+          temperature: request.config?.temperature || 0.2,
+          max_tokens: request.config?.maxOutputTokens || 1024,
+          repetition_penalty: 1.1
+        }, {
+          timeout: 2700000,
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        logger.info("✅ Response received from LM Studio!");
+        const replyContent = response.data.choices[0].message.content || "";
+        return {
+          message: {
+            role: 'model',
+            content: [{ text: replyContent }]
+          }
+        };
+      } catch (err: any) {
+        const errMsg = err.response ? `HTTP ${err.response.status} - ${JSON.stringify(err.response.data)}` : (err.message || err);
+        logger.error(`❌ Error during LM Studio call: ${errMsg}`);
+        throw err;
+      }
     }
   }
 );
 
 function formatCompactProfile(profile: any): string {
-  if (!profile) return "Aucun profil disponible.";
+  if (!profile) return "No profile available.";
   let result = `Dataset Summary:
 - Total Rows: ${profile.total_rows}
 - Total Columns: ${profile.total_columns}
@@ -314,11 +378,11 @@ const orchestratorFlow = ai.defineFlow(
   async (input) => {
     console.log("=== ORCHESTRATOR FLOW CALLED ===");
     logger.info("============================================");
-    logger.info("🧠 Démarrage du Cerveau Orchestrateur");
+    logger.info("🧠 Starting Orchestrator Brain");
     logger.info("============================================");
 
     // 1. Démarrer et connecter le client MCP Python
-    logger.info("🔌 Connexion au serveur MCP Python (Workers)...");
+    logger.info("🔌 Connecting to Python MCP Server (Workers)...");
     const pyTransport = new MCPTransport({
       command: '.venv/Scripts/python.exe',
       args: ['-u', 'src/server.py'],
@@ -338,11 +402,11 @@ const orchestratorFlow = ai.defineFlow(
 
     try {
       await pyClient.connect(pyTransport);
-      logger.info("✅ Connecté au serveur MCP Python avec succès !");
-      logger.info("📈 Tracking MLflow disponible sur : http://127.0.0.1:5000");
+      logger.info("✅ Successfully connected to Python MCP server!");
+      logger.info("📈 MLflow tracking available at: http://127.0.0.1:5000");
 
       // 1. Profiling via Python Muscles
-      logger.info("\n[PHASE 1] Appel aux Muscles Python pour Profiler le CSV...");
+      logger.info("\n[PHASE 1] Calling Python Workers to Profile CSV...");
       const csvPath = path.resolve(process.cwd(), input.csvPath);
       const safePath = csvPath.replace(/\\/g, '/');
       const nomBase = path.basename(csvPath, '.csv');
@@ -355,18 +419,18 @@ const orchestratorFlow = ai.defineFlow(
         }, undefined, { timeout: 600000 });
         pythonOutput = (response.content[0] as { type: 'text'; text: string }).text;
       } catch (err: any) {
-        logger.error("Erreur lors de l'appel Python (Profilage)", err);
+        logger.error("Error during Python call (Profiling)", err);
         return { status: "failed", reason: "Profiling failed during Python execution." };
       }
 
       if (!pythonOutput || pythonOutput.trim() === '') {
-        logger.error("❌ Erreur : Le profiler Python n'a renvoyé aucun résultat.");
+        logger.error("❌ Error: Python profiler returned no result.");
         return { status: "failed", reason: "Python profiling output was empty." };
       }
 
       const profileData = JSON.parse(pythonOutput.trim());
       if (profileData.error) {
-        logger.error(`❌ Échec du profilage du dataset : ${profileData.error}`);
+        logger.error(`❌ Dataset profiling failed: ${profileData.error}`);
         return { status: "failed", reason: profileData.error };
       }
 
@@ -374,29 +438,29 @@ const orchestratorFlow = ai.defineFlow(
         currentPhase: 'profiling',
         profile: profileData
       });
-      logger.info(`[PHASE 1] Dataset Profilé : ${profileData.total_rows} lignes, ${profileData.total_columns} colonnes.`);
+      logger.info(`[PHASE 1] Dataset Profiled: ${profileData.total_rows} rows, ${profileData.total_columns} columns.`);
 
       // Auto-detection or user specification of task type and target column
       let resolvedTarget = input.target || profileData.suggested_target || "";
       let resolvedTaskType = input.taskType || profileData.suggested_task_type || "regression";
       const inferredDomain = profileData.domaine || "general";
 
-      logger.info(`\n🔍 [AUTO-DÉTECTION] Domaine métier détecté : "${inferredDomain}"`);
-      logger.info(`🔍 [AUTO-DÉTECTION] Type de tâche suggéré : "${resolvedTaskType}"`);
-      logger.info(`🔍 [AUTO-DÉTECTION] Colonne cible suggérée : "${resolvedTarget || "Aucune (Clustering)"}"\n`);
+      logger.info(`\n🔍 [AUTO-DETECTION] Detected business domain: "${inferredDomain}"`);
+      logger.info(`🔍 [AUTO-DETECTION] Suggested task type: "${resolvedTaskType}"`);
+      logger.info(`🔍 [AUTO-DETECTION] Suggested target column: "${resolvedTarget || "None (Clustering)"}"\n`);
 
-      const confirmSelection = await askQuestion("⚠️ Confirmez-vous cette détection de domaine et type de tâche ? [O/N] (O par défaut) : ");
+      const confirmSelection = await askQuestion("⚠️ Confirm domain detection and task type? [Y/N] (Y by default): ");
       if (confirmSelection.trim().toUpperCase() === 'N') {
         logger.info("\n🛠️ Mode manuel activé. Veuillez spécifier les paramètres :");
-        const customTaskType = await askQuestion("👉 Entrez le type de tâche souhaité (ex: classification, regression, timeseries, anomaly_detection, survival_analysis, recommender_system, causal_inference, association_rules, ab_testing, semi_supervised, optimization, graph_analysis, reinforcement_learning, nlp, computer_vision) : ");
+        const customTaskType = await askQuestion("👉 Enter desired task type (e.g. classification, regression, timeseries, anomaly_detection, survival_analysis, recommender_system, causal_inference, association_rules, ab_testing, semi_supervised, optimization, graph_analysis, reinforcement_learning, nlp, computer_vision): ");
         if (customTaskType.trim()) {
           resolvedTaskType = customTaskType.trim().toLowerCase();
         }
-        const customTarget = await askQuestion("👉 Entrez le nom de la colonne cible (laisser vide pour clustering) : ");
+        const customTarget = await askQuestion("👉 Enter target column name (leave empty for clustering): ");
         resolvedTarget = customTarget.trim();
         logger.info(`🎯 Paramètres mis à jour par l'utilisateur -> Target : "${resolvedTarget || "Aucune"}" | Tâche : "${resolvedTaskType}"`);
       } else {
-        logger.info("✅ Détection automatique confirmée.");
+        logger.info("✅ Automatic detection confirmed.");
       }
 
       // 2.5 Calculer ou charger les coûts métiers
@@ -421,7 +485,7 @@ const orchestratorFlow = ai.defineFlow(
             currency: "FCFA",
             detected_column: monetaryFeat.name
           };
-          costSource = `statistiques du dataset (colonne monétaire détectée: "${monetaryFeat.name}" avec moyenne ${meanVal.toFixed(0)} FCFA)`;
+          costSource = `dataset statistics (detected monetary column: "${monetaryFeat.name}" with mean ${meanVal.toFixed(0)} FCFA)`;
         }
       }
       
@@ -433,20 +497,20 @@ const orchestratorFlow = ai.defineFlow(
           await costClient.close();
           if (dbCosts) {
             businessCosts = dbCosts;
-            costSource = `règles de référence Neo4j (domaine: "${inferredDomain}")`;
+            costSource = `Neo4j reference rules (domain: "${inferredDomain}")`;
           }
         } catch (e: any) {
-          logger.warn(`⚠️ Impossible de charger les coûts métiers depuis Neo4j: ${e.message}`);
+          logger.warn(`⚠️ Unable to load business costs from Neo4j: ${e.message}`);
         }
       }
       
       if (businessCosts) {
-        logger.info(`💰 [BUSINESS COSTS] Coûts métiers initialisés via ${costSource} :`);
+        logger.info(`💰 [BUSINESS COSTS] Business costs initialized via ${costSource} :`);
         logger.info(`   - Faux Positif (FP) : ${businessCosts.cost_FP} ${businessCosts.currency}`);
         logger.info(`   - Faux Négatif (FN) : ${businessCosts.cost_FN} ${businessCosts.currency}`);
         logger.info(`   - Vrai Positif (TP) : ${businessCosts.gain_TP} ${businessCosts.currency}`);
       } else {
-        logger.warn(`⚠️ [BUSINESS COSTS] Aucun coût métier défini.`);
+        logger.warn(`⚠️ [BUSINESS COSTS] No business cost defined.`);
       }
 
       let failedRunId: string | null = null;
@@ -463,14 +527,14 @@ const orchestratorFlow = ai.defineFlow(
         // 2.6.1 Récupérer les échecs résolus
         const pastFailures = await ragClientEx.queryPastRunFailures(inferredDomain, resolvedTaskType);
         if (pastFailures && pastFailures.length > 0) {
-          failuresPromptText = "\n⚠️ RAPPELS DES ÉCHECS ET RÉSOLUTIONS ANTÉRIEURS SUR CE DOMAINE :\n" +
+          failuresPromptText = "\n⚠️ RECALL OF PREVIOUS FAILURES AND RESOLUTIONS IN THIS DOMAIN:\n" +
             pastFailures.map(f => 
-              `- Une exécution précédente sur le dataset "${f.dataset}" a échoué avec l'alerte: "${f.errorType}" (détail: "${f.errorDetail}").\n` +
-              `  * Cette erreur a été RÉSOLUE avec succès en appliquant la stratégie suivante:\n` +
+              `- A previous execution on dataset "${f.dataset}" failed with alert: "${f.errorType}" (détail: "${f.errorDetail}").\n` +
+              `  * This error was successfully RESOLVED by applying the following strategy:\n` +
               `    ${f.resolvedStrategy}\n` +
-              `    Modèle Champion associé: ${f.resolvedModel}`
+              `    Associated Champion Model: ${f.resolvedModel}`
             ).join("\n") +
-            "\n👉 Consigne : Évite absolument de répéter les mêmes erreurs. Modifie ta stratégie de nettoyage/choix de paramètres pour appliquer directement la résolution documentée ci-dessus.";
+            "\n👉 Guideline: Avoid repeating the same errors. Adjust your cleaning strategy/hyperparameters to directly apply the resolution documented above.";
           logger.info(`💡 [SELF-HEALING RAG] ${pastFailures.length} échec(s) résolu(s) trouvé(s) et injecté(s) dans le contexte.`);
         }
 
@@ -495,7 +559,7 @@ const orchestratorFlow = ai.defineFlow(
 
         if (hasContracts) {
           dataContractAssertionsCode = `
-# ── Validation du Contrat de Données avec Pandera (Lazy Evaluation)
+# ── Data Contract Validation with Pandera (Lazy Evaluation)
 import pandera as pa
 from pandera.pandas import DataFrameSchema, Column, Check
 
@@ -506,16 +570,16 @@ ${contractColumnsCode}    }
 
 try:
     schema.validate(df, lazy=True)
-    print("✅ Validation Pandera réussie : Le schéma de données est strictement respecté.")
+    print("✅ Pandera validation successful: Data schema strictly respected.")
 except pa.errors.SchemaErrors as err:
-    print("❌ Échec de la validation du contrat de données Pandera.")
+    print("❌ Pandera data contract validation failed.")
     # Affichage des failure_cases
     import traceback
     display(err.failure_cases)
-    # Sauvegarde des cas non conformes en quarantaine (Quarantine)
+    # Saving non-compliant rows to Quarantine
     quarantine_path = INTERIM_DIR / "quarantine_errors.csv"
     err.failure_cases.to_csv(quarantine_path, index=False)
-    print(f"⚠️ Fichier de quarantaine des erreurs généré dans : {quarantine_path}")
+    print(f"⚠️ Error quarantine file generated at: {quarantine_path}")
 `;
         }
 
@@ -532,7 +596,7 @@ except pa.errors.SchemaErrors as err:
       }
 
       if (!dataContractAssertionsCode) {
-        dataContractAssertionsCode = "# Aucun contrat de données sémantique spécifié pour ce dataset.";
+        dataContractAssertionsCode = "# No semantic data contract specified for this dataset.";
       }
 
       // 🔥 INITIALISATION FIREBASE JOB
@@ -540,7 +604,7 @@ except pa.errors.SchemaErrors as err:
       logger.info(`🔗 Tracking UI démarré avec le Job ID: ${jobId}`);
 
       // 1.5 Adversarial Validation
-      logger.info("\n[PHASE 1.5] Validation Adversariale (Détection de Drift Temporel)...");
+      logger.info("\n[PHASE 1.5] Adversarial Validation (Temporal Drift Detection)...");
       let adversarialContext = "";
       try {
         const advOutput = await pyClient.callTool({
@@ -554,13 +618,13 @@ except pa.errors.SchemaErrors as err:
         }, undefined, { timeout: 600000 });
         const advResult = JSON.parse((advOutput.content[0] as { type: 'text'; text: string }).text.trim());
         if (advResult.drift_detected) {
-          logger.warn(`⚠️ Drift temporel détecté ! (AUC: ${advResult.auc.toFixed(2)})`);
-          adversarialContext = `⚠️ ALERTE ADVERSARIAL VALIDATION : Un data drift a été détecté (AUC de l'Adversarial Validator: ${advResult.auc.toFixed(2)}). Les features suivantes sont les plus suspectes d'avoir changé dans le temps : ${JSON.stringify(advResult.suspicious_features)}. Recommandation : ${advResult.recommendation}`;
+          logger.warn(`⚠️ Temporal drift detected! (AUC: ${advResult.auc.toFixed(2)})`);
+          adversarialContext = `⚠️ ADVERSARIAL VALIDATION ALERT: Data drift detected (Adversarial Validator AUC: ${advResult.auc.toFixed(2)}). The following features are most suspected of shifting over time: ${JSON.stringify(advResult.suspicious_features)}. Recommendation: ${advResult.recommendation}`;
         } else {
-          logger.info("✅ Aucun drift temporel détecté par l'Adversarial Validator.");
+          logger.info("✅ No temporal drift detected by Adversarial Validator.");
         }
       } catch (e: any) {
-         logger.warn(`⚠️ Erreur de l'Adversarial Validator (Ignorée) : ${e.message}`);
+         logger.warn(`⚠️ Adversarial Validator error (Ignored): ${e.message}`);
       }
 
       // 2. Strategizing (True Graph RAG Retrieval via Neo4j)
@@ -604,9 +668,9 @@ except pa.errors.SchemaErrors as err:
 
       let columnMappingsContext = "";
       if (columnMappings.length > 0) {
-        columnMappingsContext = `\n🏷️ MAPPINGS SÉMANTIQUES DES COLONNES (Feature Store) :
-Certaines colonnes ont déjà des concepts et actions recommandés dans le graphe :
-${columnMappings.slice(0, 3).map(cm => `- Colonne "${cm.column}" -> Concept "${cm.concept}" (${cm.definition}). Action recommandée: "${cm.action}"`).join('\n')}\n`;
+        columnMappingsContext = `\n🏷️ SEMANTIC COLUMN MAPPINGS (Feature Store):
+Some columns already have recommended concepts and actions in the graph:
+${columnMappings.slice(0, 3).map(cm => `- Column "${cm.column}" -> Concept "${cm.concept}" (${cm.definition}). Recommended action: "${cm.action}"`).join('\n')}\n`;
       }
 
       // L'agent définit sa stratégie basée sur ces connaissances via LM Studio
@@ -634,7 +698,7 @@ ${d.branches.slice(0, 2).map((b: any, i: number) => `  ${i + 1}. IF ${b.conditio
 📋 PROCEDURES AVAILABLE:
 ${knowledge.procedures.slice(0, 1).map(p => `- ${p.title}`).join('\n')}
 
-Tu dois concevoir une stratégie de nettoyage pour la tâche suivante : **${resolvedTaskType.toUpperCase()}** avec la colonne cible (target) : **${resolvedTarget || "Aucune (Clustering)"}**.
+Tu dois concevoir une stratégie de nettoyage pour la tâche suivante : **${resolvedTaskType.toUpperCase()}** avec la colonne cible (target) : **${resolvedTarget || "None (Clustering)"}**.
 `;
 
       // Appel à la boucle de Self-Healing
@@ -778,43 +842,43 @@ Tu dois concevoir une stratégie de nettoyage pour la tâche suivante : **${reso
         let finalEvaluation = evalReturn.evaluation;
         isValid = Guardrail.validateEvaluation(finalEvaluation, perfThresholds || undefined, fairnessThresholds || undefined);
         
-        // 3. Alternative de remédiation TabICL si RandomForest échoue (hors clustering)
+        // 3. Alternative de remédiation TabFM si RandomForest échoue (hors clustering)
         if (!isValid && taskType !== "clustering") {
-          logger.warn("⚠️ Guardrail Mathématique échoué pour RandomForest. Évaluation de l'alternative de remédiation TabICL...");
+          logger.warn("⚠️ Guardrail Mathématique échoué pour RandomForest. Évaluation de l'alternative de remédiation TabFM...");
           await FirestoreService.updateJobStatus(jobId, { 
             status: 'evaluating', 
-            current_message: 'Modèle classique non valide. Évaluation de TabICL...' 
+            current_message: 'Modèle classique non valide. Évaluation de TabFM...' 
           });
           
           try {
-            const tabiclOutput = await pyClient.callTool({
+            const tabfmOutput = await pyClient.callTool({
               name: 'evaluate_model',
               arguments: {
                 file_path: cleanedCsvPath.replace(/\\/g, '/'),
                 target: target,
                 task: taskType,
-                model_name: 'TabICL',
+                model_name: 'TabFM',
                 job_id: jobId
               }
             }, undefined, { timeout: 1200000 }); // 20 minutes timeout pour CPU
             
-            const tabiclReturn = JSON.parse((tabiclOutput.content[0] as { type: 'text'; text: string }).text.trim());
-            if (!tabiclReturn.error) {
-              const tabiclEval = tabiclReturn.evaluation;
-              const isTabiclValid = Guardrail.validateEvaluation(tabiclEval, perfThresholds || undefined, fairnessThresholds || undefined);
-              if (isTabiclValid) {
-                logger.info("✅ TabICL a validé le Guardrail Mathématique ! Élection de TabICL comme modèle Champion.");
-                evalReturn = tabiclReturn;
-                evaluatedModelName = "TabICL";
+            const tabfmReturn = JSON.parse((tabfmOutput.content[0] as { type: 'text'; text: string }).text.trim());
+            if (!tabfmReturn.error) {
+              const tabfmEval = tabfmReturn.evaluation;
+              const isTabfmValid = Guardrail.validateEvaluation(tabfmEval, perfThresholds || undefined, fairnessThresholds || undefined);
+              if (isTabfmValid) {
+                logger.info("✅ TabFM a validé le Guardrail Mathématique ! Élection de TabFM comme modèle Champion.");
+                evalReturn = tabfmReturn;
+                evaluatedModelName = "TabFM";
                 isValid = true;
               } else {
-                logger.warn("❌ TabICL a également échoué aux Guardrails.");
+                logger.warn("❌ TabFM a également échoué aux Guardrails.");
               }
             } else {
-              logger.warn(`⚠️ Erreur d'évaluation TabICL : ${tabiclReturn.error}`);
+              logger.warn(`⚠️ Erreur d'évaluation TabFM : ${tabfmReturn.error}`);
             }
-          } catch (tabiclErr: any) {
-            logger.warn(`⚠️ Échec de l'exécution de TabICL : ${tabiclErr.message}`);
+          } catch (tabfmErr: any) {
+            logger.warn(`⚠️ Échec de l'exécution de TabFM : ${tabfmErr.message}`);
           }
         }
       } catch (err: any) {

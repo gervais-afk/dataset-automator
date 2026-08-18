@@ -8,12 +8,12 @@ const logger = pino({ transport: { target: 'pino-pretty' } });
 
 export class GraphRetriever {
   /**
-   * Étape 1 : Appel léger à LM Studio pour extraire les concepts clés du profil
+   * Step 1: Lightweight LM Studio call to extract key concepts from the profile
    */
   static async extractConcepts(profile: any): Promise<string[]> {
-    logger.info("\n[Graph RAG] Extraction des concepts clés via LM Studio...");
+    logger.info("\n[Graph RAG] Extracting key concepts via LM Studio...");
     
-    // Simplifier le profil pour ne pas exploser le contexte dès l'étape 1
+    // Simplify the profile to avoid exploding context at step 1
     const minimalProfile = {
       total_rows: profile.total_rows,
       total_columns: profile.total_columns,
@@ -26,43 +26,117 @@ export class GraphRetriever {
     };
 
     const prompt = `
-Tu es l'Agent Stratège Data Science.
-Analyse ce profil de dataset JSON et donne-moi une liste de 2 ou 3 mots-clés représentant des concepts métier à explorer dans notre base de connaissances (ex: Stationnarité, Lagged Features, Valeurs Aberrantes, K-Means, etc.).
-Ne donne aucune autre explication. Renvoie UNIQUEMENT un tableau JSON de chaînes de caractères.
-Profil du dataset :
+You are the Data Science Strategist Agent.
+Analyze this JSON dataset profile and give me a list of 2 or 3 keywords representing business concepts to explore in our knowledge base (e.g., Stationarity, Lagged Features, Outliers, K-Means, etc.).
+Do not give any other explanation. Return ONLY a JSON array of strings.
+Dataset profile:
 ${JSON.stringify(minimalProfile)}
 
-Exemple attendu : ["stationnarité", "log_transform"]
+Expected example: ["stationarity", "log_transform"]
 `;
 
     try {
-      const activeModel = await getActiveModelName();
-      const response = await axios.post('http://127.0.0.1:1234/v1/chat/completions', {
-        model: activeModel,
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.1
-      }, {
-        timeout: 300000 // 5 minutes (300 000 ms) pour éviter de bloquer l'extraction des concepts RAG sur machines lentes
-      });
+      const provider = process.env.LLM_PROVIDER || 'local';
+      const apiKey = process.env.OPENROUTER_API_KEY || '';
+      const primaryModel = process.env.PRIMARY_MODEL || 'google/gemini-3.5-flash';
+      const fallbackModel = process.env.FALLBACK_MODEL || 'google/gemma-4-26b-a4b-it';
+      
+      let response;
+      if (provider === 'openrouter') {
+        logger.info(`📡 [Graph RAG] Extracting concepts via OpenRouter...`);
+        try {
+          response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
+            model: primaryModel,
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.1
+          }, {
+            timeout: 180000,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`,
+              'HTTP-Referer': 'http://localhost:3000',
+              'X-Title': 'Dataset Automator'
+            }
+          });
+        } catch (err: any) {
+          logger.warn(`⚠️ [Graph RAG] Primary model Gemini failed for concepts extraction. Trying fallback Gemma 4...`);
+          response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
+            model: fallbackModel,
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.1
+          }, {
+            timeout: 180000,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`,
+              'HTTP-Referer': 'http://localhost:3000',
+              'X-Title': 'Dataset Automator'
+            }
+          });
+        }
+      } else {
+        const activeModel = await getActiveModelName();
+        response = await axios.post('http://127.0.0.1:1234/v1/chat/completions', {
+          model: activeModel,
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.1
+        }, {
+          timeout: 300000
+        });
+      }
 
       const responseText = response.data.choices[0].message.content;
       
-      // Essayer de parser proprement le JSON retourné
+      // Try to cleanly parse the returned JSON
       const match = responseText.match(/\[(.*?)\]/s);
       if (match) {
         const concepts = JSON.parse(`[${match[1]}]`);
-        logger.info(`[Graph RAG] Concepts extraits : ${concepts.join(', ')}`);
+        logger.info(`[Graph RAG] Concepts extracted: ${concepts.join(', ')}`);
         return concepts;
       }
       return [];
     } catch (err) {
-      logger.error("[Graph RAG ERROR] Impossible d'extraire les concepts via LLM.");
+      logger.error("[Graph RAG ERROR] Unable to extract concepts via LLM.");
       return [];
     }
   }
 
+  static parseFrontmatter(content: string): { meta: Record<string, any>; body: string } {
+    const match = content.match(/^---\r?\n([\s\S]+?)\r?\n---/);
+    if (!match || !match[1]) return { meta: {}, body: content };
+    const meta: Record<string, any> = {};
+    const lines = match[1].split(/\r?\n/);
+    for (const line of lines) {
+      if (line.includes(':')) {
+        const parts = line.split(':');
+        const key = parts[0]?.trim();
+        const val = parts.slice(1).join(':').trim();
+        if (key) {
+          meta[key] = val;
+        }
+      }
+    }
+    return { meta, body: content.substring(match[0].length).trim() };
+  }
+
+  static calculateTrustTier(meta: Record<string, any>): { tier: 'TIER_1' | 'TIER_2' | 'EXCLUDE'; reason?: string } {
+    if (meta.status && meta.status.toLowerCase() === 'deprecated') {
+      return { tier: 'EXCLUDE', reason: 'Concept is marked as deprecated' };
+    }
+    if (meta.stale_after) {
+      const staleDate = new Date(meta.stale_after);
+      if (!isNaN(staleDate.getTime()) && staleDate < new Date()) {
+        return { tier: 'EXCLUDE', reason: 'Concept has expired stale_after freshness date' };
+      }
+    }
+    if (meta.verified && (meta.verified.includes('human:') || meta.verified.includes('@'))) {
+      return { tier: 'TIER_1' };
+    }
+    return { tier: 'TIER_2' };
+  }
+
   /**
-   * Étape 2 : Récupérer UNIQUEMENT les fiches markdown pertinentes
+   * Étape 2 : Récupérer UNIQUEMENT les fiches markdown pertinentes et certifiées OKF v0.2
    */
   static retrieveRelevantKnowledge(domain: string, concepts: string[]): string {
     const domainDir = path.join(__dirname, '..', '..', '..', 'knowledge_base', domain);
@@ -74,42 +148,49 @@ Exemple attendu : ["stationnarité", "log_transform"]
 
     try {
       const files = fs.readdirSync(domainDir).filter(f => f.endsWith('.md'));
-      let combinedKnowledge = `=== TARGETED KNOWLEDGE BASE: ${domain.toUpperCase()} ===\n`;
+      let combinedKnowledge = `=== TARGETED KNOWLEDGE BASE (OKF v0.2 TRUST-TIERED): ${domain.toUpperCase()} ===\n`;
       let loadedCount = 0;
       
       for (const file of files) {
         const filePath = path.join(domainDir, file);
         const content = fs.readFileSync(filePath, 'utf-8');
+        const { meta, body } = this.parseFrontmatter(content);
         
-        // Recherche des mots-clés dans la fiche (Frontmatter YAML ou corps du texte)
+        // Trust Tier computation according to OKF v0.2 standard
+        const trust = this.calculateTrustTier(meta);
+        if (trust.tier === 'EXCLUDE') {
+          logger.warn(`[Graph RAG OKF] Excluding record ${file}: ${trust.reason}`);
+          continue;
+        }
+
         const contentLower = content.toLowerCase();
-        // Fallback: si aucun concept n'est renvoyé, on ne charge rien (ou on charge un fallback générique)
-        // Pour éviter l'explosion de contexte, on est très restrictif
         const matches = concepts.some(concept => contentLower.includes(concept.toLowerCase().trim()));
         
         if (matches) {
-          combinedKnowledge += `\n--- Document: ${file} ---\n${content}\n`;
+          const badge = trust.tier === 'TIER_1' ? '🛡️ [OKF TIER 1 - HUMAN REVIEWED]' : '🤖 [OKF TIER 2 - MACHINE CONFIRMED]';
+          combinedKnowledge += `\n--- Document: ${file} ${badge} ---\n`;
+          combinedKnowledge += `Title: ${meta.title || file}\n`;
+          if (meta.sources) combinedKnowledge += `Sources: ${meta.sources}\n`;
+          combinedKnowledge += `${body}\n`;
           loadedCount++;
         }
       }
       
-      // Fallback si 0 match : on renvoie juste les concepts pour guider un peu
       if (loadedCount === 0) {
-        logger.info(`[Graph RAG INFO] 0 document parfaitement matché. Envoi des concepts nus.`);
-        return `Concepts identifiés (aucune fiche détaillée trouvée) : ${concepts.join(', ')}`;
+        logger.info(`[Graph RAG INFO] 0 documents perfectly matched. Sending raw concepts.`);
+        return `Identified concepts (no detailed records found): ${concepts.join(', ')}`;
       }
       
-      logger.info(`[Graph RAG INFO] ${loadedCount}/${files.length} documents pertinents ciblés pour le domaine ${domain}`);
+      logger.info(`[Graph RAG INFO] ${loadedCount}/${files.length} OKF v0.2 certified documents targeted for domain ${domain}`);
       
-      // Troncation ultime de sécurité si le texte combiné est encore trop long (ex: > 4000 caractères)
-      if (combinedKnowledge.length > 4000) {
-        logger.warn("[Graph RAG WARN] Les fiches combinées dépassent 4000 caractères. Troncation de sécurité activée.");
-        return combinedKnowledge.substring(0, 4000) + "\n...[TRONQUÉ]";
+      if (combinedKnowledge.length > 5000) {
+        logger.warn("[Graph RAG WARN] Combined records exceed 5000 characters. Safety truncation activated.");
+        return combinedKnowledge.substring(0, 5000) + "\n...[TRUNCATED]";
       }
       
       return combinedKnowledge;
     } catch (error) {
-      logger.error({ err: error }, `[Graph RAG ERROR] Erreur lors de la lecture du domaine ${domain}`);
+      logger.error({ err: error }, `[Graph RAG ERROR] Error reading domain ${domain}`);
       return '';
     }
   }

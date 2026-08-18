@@ -58,7 +58,7 @@ try:
         df_raw_original = pd.read_csv(raw_file)
         print("\n🔄 Comparaison avec les données brutes d'origine :")
         print(f"   - Fichier brut d'origine : {os.path.basename(raw_file)}")
-        print(f"   - Lignes : {len(df_raw_original)} | Colonnes : {len(df_raw_original.columns)}")
+        print(f"   - Rows : {len(df_raw_original)} | Columns : {len(df_raw_original.columns)}")
         
         # Compter les NaNs d'origine
         nans_original = df_raw_original.isnull().sum()

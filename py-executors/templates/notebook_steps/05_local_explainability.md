@@ -1,6 +1,6 @@
 # 🔍 Explicabilité Locale de Prédiction Individuelle (LIME)
 
-Objectif : Expliquer une décision unitaire (par exemple, le cas spécifique d'un client) pour éviter l'effet "boîte noire". Nous appliquons la méthode LIME (Local Interpretable Model-agnostic Explanations) en simulant des profils alternatifs autour de notre instance cible pour identifier l'influence exacte de chaque caractéristique sur sa prédiction.
+Objectif : Expliquer une décision unitaire (par exemple, le cas spécifique d'un client) pour éviter l'effet "boîte noire". We apply la méthode LIME (Local Interpretable Model-agnostic Explanations) en simulant des profils alternatifs autour de notre instance cible pour identifier l'influence exacte de chaque caractéristique sur sa prédiction.
 
 ```python
 import numpy as np
@@ -119,3 +119,9 @@ for i in reversed(sorted_indices):
     direction = "favorise" if coefficients[i] >= 0 else "défavorise"
     print(f"   • {features[i]:<25} : {coefficients[i]:+.4f} ({direction} la prédiction)")
 ```
+
+### 💡 Guide d'Interprétation LIME & Avertissement Éthique
+*   **🟢 Barres Vertes (Positives)** : Ces caractéristiques augmentent la probabilité/valeur prédite pour ce profil spécifique par rapport au voisinage local.
+*   **🔴 Barres Rouges (Négatives)** : Ces caractéristiques tirent la prédiction vers le bas.
+*   **⚠️ Recall Scientifique sur la Causalité** : Les explications LIME reflètent le raisonnement interne du modèle statistique. Elles révèlent des **corrélations locales** et non des liens de causalité empirique. Aucune action opérationnelle ne doit reposer uniquement sur ces coefficients sans validation métier préalable.
+

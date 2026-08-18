@@ -75,10 +75,10 @@ export class KnowledgeGraphClient {
     userIntent: string,
     datasetProfile: any
   ): Promise<RAGContext> {
-    // 1. Détecter les domaines pertinents
+    // 1. Detect relevant domains
     const domains = this.inferDomains(datasetProfile);
 
-    // 2. Récupérer les concepts
+    // 2. Retrieve concepts
     const conceptsResult = await this.runQuery(`
       MATCH (c:Concept)-[:BELONGS_TO]->(d:Domain)
       WHERE d.name IN ${JSON.stringify(domains)}
@@ -100,7 +100,7 @@ export class KnowledgeGraphClient {
       target_column: r.target_column || undefined
     }));
 
-    // 3. Récupérer les règles de décision
+    // 3. Retrieve decision rules
     const decisionsResult = await this.runQuery(`
       MATCH (dt:DecisionTree)-[:HAS_BRANCH]->(b:DecisionBranch)
       WHERE dt.context IN ${JSON.stringify(domains)}
@@ -117,7 +117,7 @@ export class KnowledgeGraphClient {
       branches: r.branches
     }));
 
-    // 4. Récupérer les procédures
+    // 4. Retrieve procedures
     const proceduresResult = await this.runQuery(`
       MATCH (p:Procedure)-[:HAS_STEP]->(s:Step)
       WHERE p.domain IN ${JSON.stringify(domains)}
@@ -156,11 +156,11 @@ export class KnowledgeGraphClient {
   }
 
   private inferDomains(profile: any): string[] {
-    const domains = ['data_engineering']; // Toujours pertinent
+    const domains = ['data_engineering']; // Always relevant
 
     const taskType = (profile.suggested_task_type || '').toLowerCase();
 
-    // Mapping exact des types de tâches vers les noms de nœuds Domain dans Neo4j
+    // Exact mapping of task types to Domain node names in Neo4j
     const taskTypeMap: Record<string, string> = {
       'timeseries': 'time_series',
       'time_series': 'time_series',
@@ -189,7 +189,7 @@ export class KnowledgeGraphClient {
       domains.push(domain);
     }
 
-    // Détection automatique complémentaire
+    // Additional automatic detection
     if (profile.features?.some((f: any) => f.type === 'datetime') && !domains.includes('time_series')) {
       domains.push('time_series');
     }
@@ -198,7 +198,7 @@ export class KnowledgeGraphClient {
       domains.push('supervised_learning');
     }
 
-    // Ajouter MLOps si en production
+    // Add MLOps if in production
     if (process.env.MLOPS_ENABLED === 'true') {
       domains.push('mlops');
     }
@@ -226,7 +226,7 @@ export class KnowledgeGraphClient {
     const nRows = options?.nRows || 0;
     const nCols = options?.nCols || 0;
 
-    // Extraire les métriques clés uniquement (pas le JSON complet) pour éviter le bloat
+    // Extract key metrics only (not full JSON) to avoid context bloat
     const metricsObj = typeof metrics === 'string' ? JSON.parse(metrics) : metrics;
     const compactMetrics = JSON.stringify({
       accuracy: metricsObj?.accuracy,
@@ -238,7 +238,7 @@ export class KnowledgeGraphClient {
       score: metricsObj?.score
     });
 
-    // Extraire les noms d'actions uniquement (pas le JSON complet de la stratégie)
+    // Extract action names only (not full strategy JSON)
     const strategyObj = typeof strategy === 'string' ? JSON.parse(strategy) : strategy;
     const compactStrategy = JSON.stringify({
       task_type: strategyObj?.task_type,
@@ -271,8 +271,8 @@ export class KnowledgeGraphClient {
       strategy: compactStrategy
     });
 
-    // Créer les nœuds Alert et les relier au Run
-    for (const alert of alerts.slice(0, 10)) { // Max 10 alertes par run
+    // Create Alert nodes and link them to the Run
+    for (const alert of alerts.slice(0, 10)) { // Max 10 alerts per run
       const alertId = `alert-${runId}-${alert.type}`;
       const alertQuery = `
         MATCH (run:Run {id: $runId})
@@ -290,8 +290,8 @@ export class KnowledgeGraphClient {
   }
 
   /**
-   * Récupère les 3 runs les plus similaires avec un résumé COMPACT (~30 tokens/run)
-   * pour éviter le bloat du contexte LLM.
+   * Retrieves the 3 most similar runs with a COMPACT summary (~30 tokens/run)
+   * to avoid LLM context bloat.
    */
   async getTopSimilarRuns(domain: string, taskType: string, nRows?: number): Promise<string> {
     const records = await this.runQuery(`
@@ -308,7 +308,7 @@ export class KnowledgeGraphClient {
     `, { domain, taskType });
 
     if (records.length === 0) {
-      // Fallback : n'importe quel domaine avec le même task_type
+      // Fallback: any domain with the same task_type
       const fallback = await this.runQuery(`
         MATCH (ds:Dataset)-[:HAS_RUN]->(r:Run {taskType: $taskType, status: 'SUCCESS'})
         MATCH (r)-[:USED_MODEL]->(m:Model)
@@ -319,16 +319,16 @@ export class KnowledgeGraphClient {
       records.push(...fallback);
     }
 
-    // Résumé COMPACT — max 150 tokens total
+    // COMPACT summary — max 150 tokens total
     const lines = records.map((r: any, i: number) => {
       const m = r.metrics ? JSON.parse(r.metrics) : {};
       const score = m.accuracy ?? m.macro_f1 ?? m.r2 ?? m.score ?? '?';
       const scoreStr = typeof score === 'number' ? `${(score * 100).toFixed(1)}%` : score;
-      const alerts = (r.alerts || []).filter(Boolean).join(', ') || 'aucune alerte';
-      return `  ${i+1}. [${r.dataset}] → ${r.model} (score: ${scoreStr}) | alertes: ${alerts}`;
+      const alerts = (r.alerts || []).filter(Boolean).join(', ') || 'no alerts';
+      return `  ${i+1}. [${r.dataset}] → ${r.model} (score: ${scoreStr}) | alerts: ${alerts}`;
     });
 
-    return `\n📜 RUNS SIMILAIRES (mémoire épisodique, domaine: ${domain}/${taskType}) :\n${lines.join('\n')}\n`;
+    return `\n📜 SIMILAR RUNS (episodic memory, domain: ${domain}/${taskType}) :\n${lines.join('\n')}\n`;
   }
 
   async queryPastRuns(domain: string, taskType: string): Promise<Array<{

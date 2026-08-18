@@ -33,10 +33,14 @@ if TYPE_TACHE == "classification":
     except ImportError:
         pass
     try:
-        from tabicl import TabICLClassifier
-        MODELES["TabICL (SOTA)"] = TabICLClassifier()
-    except ImportError:
-        pass
+        from tabfm import TabFMClassifier
+        MODELES["TabFM (Google Foundation)"] = TabFMClassifier()
+    except Exception:
+        try:
+            from tabicl import TabICLClassifier
+            MODELES["TabICL (SOTA)"] = TabICLClassifier()
+        except Exception:
+            pass
     cv = RepeatedStratifiedKFold(n_splits=5, n_repeats=2, random_state=42)
     metric = "accuracy"
 
@@ -60,10 +64,14 @@ elif TYPE_TACHE == "regression":
     except ImportError:
         pass
     try:
-        from tabicl import TabICLRegressor
-        MODELES["TabICL (SOTA)"] = TabICLRegressor()
-    except ImportError:
-        pass
+        from tabfm import TabFMRegressor
+        MODELES["TabFM (Google Foundation)"] = TabFMRegressor()
+    except Exception:
+        try:
+            from tabicl import TabICLRegressor
+            MODELES["TabICL (SOTA)"] = TabICLRegressor()
+        except Exception:
+            pass
     cv = RepeatedKFold(n_splits=5, n_repeats=2, random_state=42)
     metric = "r2"
 

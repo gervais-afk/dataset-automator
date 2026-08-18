@@ -1,0 +1,67 @@
+{
+  "report_id": "redteam_20260818_185519",
+  "timestamp": "2026-08-18T17:55:19.258695+00:00",
+  "target_column": "churn",
+  "dataset_rows": 915,
+  "dataset_cols": 12,
+  "overall_status": "APPROVED",
+  "score_adversarial_resistance": "100 / 100",
+  "attacks_executed": 4,
+  "attacks_passed": 4,
+  "attack_results": [
+    {
+      "attack_name": "Target_Leakage_Detection",
+      "passed": true,
+      "severity": "NONE",
+      "suspect_columns": [],
+      "diagnosis": "✅ Aucune fuite de données cible détectée (corrélations saines)."
+    },
+    {
+      "attack_name": "Outlier_Extreme_Stress_Test",
+      "passed": true,
+      "robustness_score": 94.5,
+      "injected_perturbations": [
+        {
+          "column": "client_id",
+          "injected_extreme_value": 2943.5
+        },
+        {
+          "column": "anciennete_mois",
+          "injected_extreme_value": 402.0
+        },
+        {
+          "column": "age",
+          "injected_extreme_value": 224.0
+        },
+        {
+          "column": "conso_data_go",
+          "injected_extreme_value": 48.3
+        }
+      ],
+      "diagnosis": "✅ Résilience aux valeurs extrêmes validée (Score de Robustesse : 94.5/100)."
+    },
+    {
+      "attack_name": "Permutation_Noise_Invariance",
+      "passed": true,
+      "stability_score": 91.2,
+      "noise_level_injected": "15%",
+      "diagnosis": "✅ Invariance face au bruit confirmée (Indice de Stabilité : 91.2/100)."
+    },
+    {
+      "attack_name": "Algorithmic_Bias_Audit",
+      "sensitive_column_audited": "region",
+      "categories_evaluated": [
+        "Hauts-de-France",
+        "Auvergne-Rhône-Alpes",
+        "Nouvelle-Aquitaine",
+        "Île-de-France",
+        "Occitanie"
+      ],
+      "disparity_ratio": 0.88,
+      "passed": true,
+      "compliance_eeoc_four_fifths": "PASSED (>= 0.80)",
+      "diagnosis": "✅ Absence de biais disproportionné (Ratio de Parité : 0.88 >= 0.80)."
+    }
+  ],
+  "recommendation": "Pipeline prêt pour la mise en production MLOps."
+}

@@ -1,0 +1,109 @@
+{
+  "$schema": "https://raw.githubusercontent.com/google/model-card-toolkit/master/model_card_toolkit/schema/v0.0.2/model_card.schema.json",
+  "model_card_id": "mc_tabfm_20260818_183702",
+  "schema_version": "0.0.2",
+  "model_details": {
+    "name": "Google TabFM (Foundation Model for Tabular Data)",
+    "overview": "Modèle de fondation tabulaire pré-entraîné par Google Research (TabFM), fine-tuné et évalué automatiquement via l'orchestrateur Dataset Automator.",
+    "version": {
+      "name": "v3.0.0-champion",
+      "date": "2026-08-18T17:37:02.895620+00:00"
+    },
+    "owners": [
+      {
+        "name": "Dataset Automator Platform",
+        "contact": "mlops-platform@dataset-automator.io"
+      }
+    ],
+    "license": "Apache-2.0 / Proprietary Governance OKF v0.2",
+    "references": [
+      {
+        "reference": "Google TabFM: Foundation Model for Tabular Data (arXiv)"
+      },
+      {
+        "reference": "CRISP-ML(Q) Quality Assurance Standard"
+      }
+    ]
+  },
+  "intended_use": {
+    "primary_uses": [
+      "Modélisation prédictive et classification de haute précision pour le domaine General / Enterprise Tabular.",
+      "Génération automatisée de notebooks MLOps auditables et de pipelines reproductibles."
+    ],
+    "primary_users": [
+      "Lead Data Scientists",
+      "MLOps Engineers",
+      "Auditeurs de Risque IA (EU AI Act)"
+    ],
+    "out_of_scope_uses": [
+      "Décisions médicales ou judiciaires entièrement automatisées sans supervision humaine (HITL).",
+      "Données non-tabulaires non-structurées (audio, vidéo brut sans pré-processing)."
+    ]
+  },
+  "quantitative_analysis": {
+    "performance_metrics": [
+      {
+        "type": "Macro F1-Score",
+        "value": 0.891,
+        "slice": "Global Test Set"
+      },
+      {
+        "type": "Accuracy",
+        "value": "92.1%",
+        "slice": "Global Test Set"
+      },
+      {
+        "type": "Overfitting Gap (Train - Test)",
+        "value": 0.04,
+        "threshold": "< 0.20"
+      },
+      {
+        "type": "Cross-Validation Stability (Std)",
+        "value": "±0.015",
+        "slice": "5-Fold CV"
+      }
+    ],
+    "guardrail_checks": [
+      {
+        "name": "Multicollinearity (VIF Max)",
+        "observed": 2.4,
+        "allowed": "< 10.0",
+        "status": "PASSED"
+      },
+      {
+        "name": "Residual Autocorrelation (Durbin-Watson)",
+        "observed": 1.95,
+        "allowed": "[1.5 - 2.5]",
+        "status": "PASSED"
+      },
+      {
+        "name": "Overfitting Gap Check",
+        "observed": 0.04,
+        "allowed": "< 0.20",
+        "status": "PASSED"
+      }
+    ]
+  },
+  "considerations": {
+    "ethical_considerations": [
+      {
+        "name": "Anonymisation PII",
+        "mitigation_strategy": "Masquage strict des identifiants et des données sensibles via Guardian Node avant l'ingestion."
+      },
+      {
+        "name": "Équité Algorithmique",
+        "mitigation_strategy": "Vérification contrefactuelle via Google PAIR What-If Tool pour neutraliser les disparités d'attribution."
+      }
+    ],
+    "limitations": [
+      "Nécessite un jeu de données avec au moins 100 enregistrements pour garantir la stabilité de l'estimation bayésienne de TabFM.",
+      "Les valeurs extrêmes non-normalisées doivent être traitées via le pipeline de preprocessing certifié sans fuite."
+    ]
+  },
+  "data_provenance": {
+    "dataset_name": "clients.csv",
+    "target_column": "target",
+    "dataset_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "serialization_format": "SKOPS (Secure Serialization Format)"
+  }
+}

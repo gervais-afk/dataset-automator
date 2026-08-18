@@ -24,7 +24,7 @@ if tx_col not in df.columns:
 if item_col not in df.columns:
     item_col = [c for c in df.columns if any(k in c.lower() for k in ['item', 'product', 'produit', 'article'])][0]
 
-print(f"📊 Colonnes utilisées : Transaction ID = '{tx_col}' | Item = '{item_col}'")
+print(f"📊 Columns utilisées : Transaction ID = '{tx_col}' | Item = '{item_col}'")
 
 # ── 1. Transformation en Format Binaire ───────────────────────────────
 print("\n⏳ Conversion des transactions en matrice d'encodage binaire...")

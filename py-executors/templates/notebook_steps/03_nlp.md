@@ -65,7 +65,7 @@ clf.fit(X_train_vec, y_tr)
 y_pred = clf.predict(X_test_vec)
 
 # ── 4. Évaluation ─────────────────────────────────────────────────────
-print("\n📋 Rapport de Classification :")
+print("\n📋 Classification Report :")
 print(classification_report(y_te, y_pred))
 
 # Enregistrement pour l'orchestrateur
@@ -108,7 +108,7 @@ else:
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=classes, yticklabels=classes)
     plt.ylabel('Réel')
     plt.xlabel('Prédit')
-    plt.title('Matrice de Confusion (Classification de Textes)')
+    plt.title('Confusion Matrix (Classification de Textes)')
     plt.savefig(os.path.join(OUTPUT_DIR, '03_nlp_confusion_matrix.png'), dpi=150)
     plt.show()
 ```

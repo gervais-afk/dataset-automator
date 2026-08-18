@@ -49,6 +49,12 @@ def generate_model_card(output_dir, dataset_name, task_type, target_col, metrics
 - Explications globales (SHAP) et locales (LIME) générées et stockées sous forme de graphiques dans le répertoire du run.
 - **Rappel Causalité** : Les contributions indiquent la force d'association locale/globale avec la prédiction du modèle. Elles ne décrivent pas des relations de causalité absolue.
 
+## Confiance Agentique & Gouvernance (OKF v0.2)
+- **Provenance & Ontologie** : Base de connaissances Neo4j / Fiches standardisées OKF v0.2.
+- **Niveau de Confiance** : **Tier 1 (Human-Reviewed)** appliqué sur toutes les règles critiques.
+- **Reçus d'Attestation** : Prétraitements audités sans improvisation LLM (`attestation_receipts.json`).
+- **Sérialisation du Modèle** : Format sécurisé **`.skops`** (Zéro vulnérabilité Pickle, conformité Enterprise).
+
 ## Limites & Recommandations
 - Le modèle doit être utilisé avec prudence sur des données hors-distribution (données dont les variables dépassent les limites observées dans le dataset d'entraînement).
 - **Recalibrage** : Recommandé périodiquement (ex: tous les mois ou si un drift significatif est détecté).

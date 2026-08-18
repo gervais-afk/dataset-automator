@@ -1,13 +1,12 @@
 /**
  * entityReconciler.ts — SOVEREIGN.BI Enterprise Context & Action Layer
  *
- * Outil Genkit exposant la réconciliation d'entités (Entity Resolution) via
- * le script Python entity_resolver.py.
+ * Genkit tool exposing Entity Resolution via the Python entity_resolver.py script.
  *
- * Permet à l'agent IA de :
- *  1. Soumettre une liste d'entités brutes (noms, types, sources) à réconcilier
- *  2. Obtenir les MIDs stables résolus + le rapport de déduplication
- *  3. Les nouvelles entités sont automatiquement insérées dans Neo4j
+ * Allows the AI agent to:
+ *  1. Submit a list of raw entities (names, types, sources) for reconciliation
+ *  2. Obtain resolved stable MIDs + the deduplication report
+ *  3. New entities are automatically inserted into Neo4j
  */
 
 import { z } from 'genkit';
@@ -21,7 +20,7 @@ import pino from 'pino';
 const execFileAsync = promisify(execFile);
 const logger = pino({ transport: { target: 'pino-pretty' } });
 
-// ─── Chemins ──────────────────────────────────────────────────────────────────
+// ─── Paths ──────────────────────────────────────────────────────────────────────────────────
 
 const PYTHON_EXE = path.resolve(
   __dirname, '..', '..', '..', 'py-executors', '.venv', 'Scripts', 'python.exe',
@@ -52,46 +51,46 @@ export interface ResolutionResultOutput {
   aliases_added: string[];
 }
 
-// ─── Export de l'outil Genkit ─────────────────────────────────────────────────
+// ─── Genkit Tool Export ─────────────────────────────────────────────────────────────────────
 
 export const getEntityReconciler = (ai: any) =>
   ai.defineTool(
     {
       name: 'entityReconciler',
       description:
-        "Réconcilie des entités brutes provenant de sources hétérogènes (ERP, CRM, Excel, PDF) " +
-        "avec les entités canoniques du graphe de connaissances Neo4j. " +
-        "Utilise un algorithme de matching fuzzy (rapidfuzz) pour identifier les doublons, " +
-        "attribue un Machine ID (MID) stable à chaque entité, et enrichit les aliases sans écraser " +
-        "les données existantes. " +
-        "Retourne le statut de résolution (MATCHED/NEW/AMBIGUOUS) et le MID pour chaque entité soumise. " +
-        "À utiliser lorsqu'on reçoit des données d'une nouvelle source et qu'on doit les intégrer " +
-        "dans l'ontologie sans créer de doublons.",
+        "Reconciles raw entities from heterogeneous sources (ERP, CRM, Excel, PDF) " +
+        "with canonical entities in the Neo4j knowledge graph. " +
+        "Uses a fuzzy matching algorithm (rapidfuzz) to identify duplicates, " +
+        "assigns a stable Machine ID (MID) to each entity, and enriches aliases without overwriting " +
+        "existing data. " +
+        "Returns the resolution status (MATCHED/NEW/AMBIGUOUS) and the MID for each submitted entity. " +
+        "Use when receiving data from a new source and needing to integrate it " +
+        "into the ontology without creating duplicates.",
       inputSchema: z.object({
         entities: z
           .array(
             z.object({
-              name:       z.string().describe("Nom de l'entité brute"),
-              type:       z.string().describe("Type de l'entité (ex: 'Supplier', 'GIC', 'Product')"),
-              source:     z.string().describe("Source des données (ex: 'ERP_SAP', 'CRM_Salesforce')"),
-              aliases:    z.array(z.string()).optional().describe("Noms alternatifs connus"),
-              properties: z.record(z.unknown()).optional().describe("Attributs métier additionnels"),
+              name:       z.string().describe("Raw entity name"),
+              type:       z.string().describe("Entity type (e.g., 'Supplier', 'GIC', 'Product')"),
+              source:     z.string().describe("Data source (e.g., 'ERP_SAP', 'CRM_Salesforce')"),
+              aliases:    z.array(z.string()).optional().describe("Known alternative names"),
+              properties: z.record(z.unknown()).optional().describe("Additional business attributes"),
             }),
           )
           .min(1)
           .max(100)
-          .describe("Liste des entités brutes à réconcilier (max 100 par appel)"),
+          .describe("List of raw entities to reconcile (max 100 per call)"),
         similarityThreshold: z
           .number()
           .int()
           .min(50)
           .max(100)
           .default(85)
-          .describe("Seuil de similarité fuzzy pour considérer deux entités comme identiques (50–100, défaut: 85)"),
+          .describe("Fuzzy similarity threshold to consider two entities identical (50–100, default: 85)"),
         dryRun: z
           .boolean()
           .default(false)
-          .describe("Si true, simule la résolution sans écrire dans Neo4j"),
+          .describe("If true, simulates resolution without writing to Neo4j"),
       }),
       outputSchema: z.any(),
     },
@@ -102,20 +101,20 @@ export const getEntityReconciler = (ai: any) =>
     }): Promise<{ results: ResolutionResultOutput[]; summary: object } | { error: string }> => {
 
       logger.info(
-        `🔗 [EntityReconciler] Début réconciliation — ${input.entities.length} entités, ` +
-        `seuil: ${input.similarityThreshold}%, dry-run: ${input.dryRun}`,
+        `🔗 [EntityReconciler] Starting reconciliation — ${input.entities.length} entities, ` +
+        `threshold: ${input.similarityThreshold}%, dry-run: ${input.dryRun}`,
       );
 
-      // ── Vérification du script Python ──────────────────────────────────────
+      // ── Verify Python script exists ──────────────────────────────────────────────
       if (!fs.existsSync(RESOLVER_SCRIPT)) {
-        return { error: `[EntityReconciler] Script entity_resolver.py introuvable : ${RESOLVER_SCRIPT}` };
+        return { error: `[EntityReconciler] Script entity_resolver.py not found: ${RESOLVER_SCRIPT}` };
       }
 
-      // Créer des fichiers temporaires pour l'échange de données
+      // Create temporary files for data exchange
       const tmpInput  = path.join(os.tmpdir(), `entity_input_${Date.now()}.json`);
       const tmpOutput = path.join(os.tmpdir(), `entity_output_${Date.now()}.json`);
 
-      // Convertir les entités en format compatible avec entity_resolver.py
+      // Convert entities to format compatible with entity_resolver.py
       const entitiesForPython = input.entities.map(e => ({
         name:       e.name,
         type:       e.type,
@@ -127,12 +126,12 @@ export const getEntityReconciler = (ai: any) =>
       fs.writeFileSync(tmpInput, JSON.stringify(entitiesForPython, null, 2), 'utf-8');
 
       try {
-        // Logique de configuration de l'URI Neo4j pour l'exécution subprocess
+        // Neo4j URI configuration logic for subprocess execution
         const neo4jUri = process.env.NEO4J_URI || 'bolt://127.0.0.1:7687';
         const neo4jUser = process.env.NEO4J_USER || 'neo4j';
         const neo4jPassword = process.env.NEO4J_PASSWORD || 'password123';
 
-        // Appel via subprocess Python (même pattern que guardrailAuditor.ts)
+        // Subprocess Python call (same pattern as guardrailAuditor.ts)
         const args = [
           RESOLVER_SCRIPT,
           '--input',     tmpInput,
@@ -153,16 +152,16 @@ export const getEntityReconciler = (ai: any) =>
           }
         });
 
-        // Lire les résultats
+        // Read results
         if (!fs.existsSync(tmpOutput)) {
-          logger.warn('[EntityReconciler] Pas de fichier de sortie — résultats non disponibles');
+          logger.warn('[EntityReconciler] No output file found — results unavailable');
           return {
             results: [],
             summary: {
               total:   input.entities.length,
               matched: 0,
               new:     0,
-              message: 'Réconciliation effectuée (résultats non exportés — vérifiez --output)',
+              message: 'Reconciliation completed (results not exported — check --output)',
             },
           };
         }
@@ -171,14 +170,14 @@ export const getEntityReconciler = (ai: any) =>
           fs.readFileSync(tmpOutput, 'utf-8'),
         );
 
-        // Calculer le résumé
+        // Calculate summary
         const matched   = rawResults.filter(r => r.status === 'MATCHED').length;
         const newCount  = rawResults.filter(r => r.status === 'NEW').length;
         const ambiguous = rawResults.filter(r => r.status === 'AMBIGUOUS').length;
 
         logger.info(
-          `✅  [EntityReconciler] Terminé — ` +
-          `${matched} matchés, ${newCount} nouveaux, ${ambiguous} ambigus`,
+          `✅  [EntityReconciler] Completed — ` +
+          `${matched} matched, ${newCount} new, ${ambiguous} ambiguous`,
         );
 
         return {
@@ -195,12 +194,12 @@ export const getEntityReconciler = (ai: any) =>
 
       } catch (err: any) {
         logger.warn(
-          `⚠️  [EntityReconciler] Subprocess Python échoué : ${err.message}. ` +
-          `Retour d'un résultat vide.`,
+          `⚠️  [EntityReconciler] Python subprocess failed: ${err.message}. ` +
+          `Returning empty result.`,
         );
         return {
-          error: `Subprocess entity_resolver.py échoué : ${err.message}. ` +
-                 `Assurez-vous que l'environnement virtuel Python est opérationnel.`
+          error: `Subprocess entity_resolver.py failed: ${err.message}. ` +
+                 `Make sure the Python virtual environment is operational.`
         };
       } finally {
         if (fs.existsSync(tmpInput))  fs.unlinkSync(tmpInput);

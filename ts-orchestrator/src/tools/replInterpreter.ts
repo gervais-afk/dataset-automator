@@ -1,10 +1,10 @@
 /**
  * replInterpreter.ts — SOVEREIGN.BI Enterprise Context & Action Layer
  *
- * Outil Genkit exposant le bac à sable REPL (Python Execution Engine) aux agents IA.
+ * Genkit tool exposing the REPL sandbox (Python Execution Engine) to AI agents.
  *
- * Permet à l'agent d'écrire un script d'analyse complet (Pandas, Neo4j, SQL)
- * et de l'exécuter en 1 seul appel sans multiplier les requêtes séquentielles.
+ * Allows the agent to write a complete analysis script (Pandas, Neo4j, SQL)
+ * and execute it in a single call without chaining multiple sequential requests.
  */
 
 import { z } from 'genkit';
@@ -18,7 +18,7 @@ import pino from 'pino';
 const execFileAsync = promisify(execFile);
 const logger = pino({ transport: { target: 'pino-pretty' } });
 
-// ─── Chemins ──────────────────────────────────────────────────────────────────
+// ─── Paths ──────────────────────────────────────────────────────────────────────────────────
 
 const PYTHON_EXE = path.resolve(
   __dirname, '..', '..', '..', 'py-executors', '.venv', 'Scripts', 'python.exe',
@@ -39,39 +39,39 @@ export interface REPLResult {
   executionTimeMs?: number;
 }
 
-// ─── Export Outil Genkit ──────────────────────────────────────────────────────
+// ─── Genkit Tool Export ──────────────────────────────────────────────────────────────────────────────
 
 export const getREPLInterpreter = (ai: any) =>
   ai.defineTool(
     {
       name: 'replInterpreter',
       description:
-        "Exécute un script Python d'analyse de données dans un bac à sable REPL sécurisé (Python Sandbox). " +
-        "L'environnement dispose déjà des objets pré-chargés : " +
+        "Executes a Python data analysis script in a secure REPL sandbox (Python Sandbox). " +
+        "The environment already has pre-loaded objects: " +
         "- `pd` (Pandas), `np` (NumPy), `json` " +
-        "- `load_csv('filename.csv')` : charge un fichier du dossier data/ dans un DataFrame " +
-        "- `query_neo4j(cypher_str)` : exécute du Cypher déterministe sur le graphe de connaissances " +
-        "- `query_sql(sql_str)` : exécute du SQL (non recommandé car non configuré par défaut) " +
-        "Utiliser cet outil pour regrouper plusieurs explorations complexes en un seul script au lieu d'enchaîner " +
-        "de multiples requêtes séquentielles.",
+        "- `load_csv('filename.csv')`: loads a file from the data/ folder into a DataFrame " +
+        "- `query_neo4j(cypher_str)`: executes deterministic Cypher on the knowledge graph " +
+        "- `query_sql(sql_str)`: executes SQL (not recommended as it is not configured by default) " +
+        "Use this tool to bundle multiple complex explorations into a single script instead of chaining " +
+        "multiple sequential requests.",
       inputSchema: z.object({
         script: z
           .string()
-          .describe("Code source Python à exécuter dans le REPL (ex: `df = load_csv('diabetes_data_upload.csv'); print(df.describe())`)"),
+          .describe("Python source code to execute in the REPL (e.g., `df = load_csv('diabetes_data_upload.csv'); print(df.describe())`)"),
         timeoutMs: z
           .number()
           .int()
           .min(1000)
           .max(30000)
           .default(10000)
-          .describe("Temps limite d'exécution en ms (défaut: 10000)"),
+          .describe("Execution timeout in ms (default: 10000)"),
       }),
       outputSchema: z.any(),
     },
     async (input: { script: string; timeoutMs: number }): Promise<REPLResult> => {
       const startTime = Date.now();
 
-      logger.info(`⚡ [REPLInterpreter] Lancement du script dans le REPL Sandbox...`);
+      logger.info(`⚡ [REPLInterpreter] Launching script in REPL Sandbox...`);
 
       if (!fs.existsSync(REPL_SCRIPT)) {
         return {
@@ -81,7 +81,7 @@ export const getREPLInterpreter = (ai: any) =>
         };
       }
 
-      // Fichiers temporaires d'entrée et de sortie
+      // Temporary input and output files
       const tmpInput  = path.join(os.tmpdir(), `repl_input_${Date.now()}.json`);
       const tmpOutput = path.join(os.tmpdir(), `repl_output_${Date.now()}.json`);
 
@@ -111,7 +111,7 @@ export const getREPLInterpreter = (ai: any) =>
           return {
             status: 'ERROR',
             output: '',
-            error: '[REPLInterpreter] Le bac à sable n\'a pas produit de fichier de sortie.',
+            error: '[REPLInterpreter] The sandbox did not produce an output file.',
           };
         }
 
@@ -119,8 +119,8 @@ export const getREPLInterpreter = (ai: any) =>
         const executionTimeMs = Date.now() - startTime;
 
         logger.info(
-          `      [REPLInterpreter] Exécution terminée en ${executionTimeMs}ms — ` +
-          `statut: ${rawResult.status}`,
+          `      [REPLInterpreter] Execution completed in ${executionTimeMs}ms — ` +
+          `status: ${rawResult.status}`,
         );
 
         return {
@@ -134,11 +134,11 @@ export const getREPLInterpreter = (ai: any) =>
 
       } catch (err: any) {
         const executionTimeMs = Date.now() - startTime;
-        logger.error({ err }, `❌ [REPLInterpreter] Erreur d'exécution : ${err.message}`);
+        logger.error({ err }, `❌ [REPLInterpreter] Execution error: ${err.message}`);
         return {
           status: 'ERROR',
           output: '',
-          error: `Erreur REPL : ${err.message}`,
+          error: `REPL Error: ${err.message}`,
           executionTimeMs,
         };
       } finally {

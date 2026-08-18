@@ -17,7 +17,7 @@ print("🎯 RECOMMANDATION PERSONNALISÉE (SVD)")
 print("=" * 60)
 
 # Détection heuristique des colonnes de notations
-# Colonnes attendues : user_id, item_id, rating
+# Columns attendues : user_id, item_id, rating
 user_col = 'user_id'
 item_col = 'item_id'
 rating_col = globals().get('TARGET_COL') or 'rating'

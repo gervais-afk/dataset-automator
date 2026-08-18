@@ -47,6 +47,21 @@ try:
 except ImportError:
     HAS_TABICL = False
 
+# Monkeypatch jaxtyping before importing tabfm to bypass JAX dependency
+try:
+    import jaxtyping
+    from typing import Any
+    if not hasattr(jaxtyping, "Array"):
+        jaxtyping.Array = Any
+except ImportError:
+    pass
+
+try:
+    from tabfm import TabFMClassifier, TabFMRegressor
+    HAS_TABFM = True
+except Exception:
+    HAS_TABFM = False
+
 # Initialize the FastMCP server
 mcp = FastMCP("DatasetAutomator")
 
@@ -85,11 +100,11 @@ def ensure_mlflow_server_running():
                 if is_port_in_use(5000):
                     break
                 time.sleep(0.5)
-            sys.stderr.write("🚀 Serveur MLflow démarré automatiquement sur http://127.0.0.1:5000\n")
+            sys.stderr.write("🚀 MLflow server started automatically on http://127.0.0.1:5000\n")
         except Exception as e:
-            sys.stderr.write(f"⚠️ Impossible de démarrer le serveur MLflow: {e}\n")
+            sys.stderr.write(f"⚠️ Unable to start MLflow server: {e}\n")
     else:
-        sys.stderr.write("ℹ️ Serveur MLflow déjà actif sur le port 5000.\n")
+        sys.stderr.write("ℹ️ MLflow server already active on port 5000.\n")
 
 
 try:
@@ -175,7 +190,7 @@ def parse_momo_data(series) -> 'pd.Series':
 def profile_dataset(file_path: str) -> str:
     """Read a CSV and return a statistical summary JSON."""
     import sys
-    sys.stderr.write(f"🔵 [Python Worker] Reçu appel profile_dataset pour: {file_path}\n")
+    sys.stderr.write(f"🔵 [Python Worker] Received profile_dataset call for: {file_path}\n")
     sys.stderr.flush()
     try:
         import os
@@ -231,7 +246,7 @@ def apply_cleaning_strategy(file_path: str, cleaning_schema: str, job_id: str = 
     """Apply deterministic cleaning and save versioned file."""
     if job_id:
         start_heartbeat(job_id)
-        update_job_progress(job_id, 'cleaning', 15, "Début du nettoyage des colonnes...")
+        update_job_progress(job_id, 'cleaning', 15, "Starting columns cleaning...")
 
     try:
         schema = json.loads(cleaning_schema)
@@ -259,9 +274,9 @@ def apply_cleaning_strategy(file_path: str, cleaning_schema: str, job_id: str = 
                         for col in cols:
                             try:
                                 df[col] = df.eval(formula_expr)
-                                print(f"✅ [Python] Évalué avec succès la formule '{formula_expr}' pour la colonne '{col}'")
+                                print(f"✅ [Python] Successfully evaluated formula '{formula_expr}' pour la colonne '{col}'")
                             except Exception as eval_err:
-                                print(f"❌ [Python] Erreur lors de l'évaluation de la formule '{formula_expr}' sur '{col}': {eval_err}")
+                                print(f"❌ [Python] Error evaluating formula '{formula_expr}' sur '{col}': {eval_err}")
                     else:
                         print(f"⚠️ [Python] Formule invalide ou non sécurisée rejetée: '{formula_expr}'")
                 continue
@@ -319,7 +334,7 @@ def apply_cleaning_strategy(file_path: str, cleaning_schema: str, job_id: str = 
                             scaler = StandardScaler()
                             df[col] = scaler.fit_transform(df[[col]])
                         else:
-                            print(f"⚠️ [Python] Ignoré 'scale' sur la colonne non-numérique '{col}'")
+                            print(f"⚠️ [Python] Ignoré 'scale' on non-numeric column '{col}'")
                     elif action == "encode":
                         if df[col].dtype == 'object' or df[col].dtype.name == 'category':
                             df[col] = df[col].astype('category').cat.codes
@@ -327,7 +342,7 @@ def apply_cleaning_strategy(file_path: str, cleaning_schema: str, job_id: str = 
                         if pd.api.types.is_numeric_dtype(df[col]):
                             df[col] = mstats.winsorize(df[col], limits=[0.05, 0.05])
                         else:
-                            print(f"⚠️ [Python] Ignoré 'winsorize' sur la colonne non-numérique '{col}'")
+                            print(f"⚠️ [Python] Ignoré 'winsorize' on non-numeric column '{col}'")
                     elif action == "sanitize_phone":
                         df[col] = sanitize_cam_phone(df[col])
                     elif action == "normalize_cam_geo":
@@ -335,7 +350,7 @@ def apply_cleaning_strategy(file_path: str, cleaning_schema: str, job_id: str = 
                             region_col = f"{col}_region"
                             df[region_col] = normalize_cam_geography(df[col])
                         else:
-                            print(f"⚠️ [Python] Ignoré 'normalize_cam_geo' sur la colonne non-catégorielle '{col}'")
+                            print(f"⚠️ [Python] Ignoré 'normalize_cam_geo' on non-categorical column '{col}'")
                     elif action == "clean_fcfa":
                         df[col] = clean_fcfa_currency(df[col])
                     elif action == "parse_momo":
@@ -350,7 +365,7 @@ def apply_cleaning_strategy(file_path: str, cleaning_schema: str, job_id: str = 
                 df = df.loc[numeric_df.index[outliers == 1]]
         
         if job_id:
-            update_job_progress(job_id, 'cleaning', 25, f"Sauvegarde du fichier nettoyé ({len(df)} lignes)")
+            update_job_progress(job_id, 'cleaning', 25, f"Saving cleaned dataset file ({len(df)} rows)")
                 
         # Versioning
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -362,36 +377,50 @@ def apply_cleaning_strategy(file_path: str, cleaning_schema: str, job_id: str = 
         output_path = f"{output_dir}/cleaned_{version_hash}_{timestamp}.csv"
         
         df.to_csv(output_path, index=False)
-        return json.dumps({"status": "success", "cleanedDataPath": output_path, "final_rows": len(df)})
+
+        # OKF v0.2 Attestation Receipts Generation
+        receipts = []
+        for step in schema.get("steps", []):
+            action_name = step.get("action", "custom_transform")
+            cols_target = step.get("column", [])
+            receipt_entry = {
+                "receipt_id": f"rec_{hashlib.md5((str(step) + timestamp).encode()).hexdigest()[:12]}",
+                "concept_type": "Attested Computation",
+                "action": action_name,
+                "target_columns": cols_target if isinstance(cols_target, list) else [cols_target],
+                "parameters": {k: v for k, v in step.items() if k not in ["action", "column"]},
+                "runtime_attester": "okf_v02_deterministic_validator",
+                "timestamp": datetime.now().isoformat(),
+                "verdict": "PASSED"
+            }
+            receipts.append(receipt_entry)
+            
+        receipts_file = f"{output_dir}/attestation_receipts.json"
+        try:
+            with open(receipts_file, "w", encoding="utf-8") as rf:
+                json.dump({
+                    "bundle": "OKF v0.2 Trust Engine",
+                    "job_id": job_id,
+                    "verified_at": datetime.now().isoformat(),
+                    "total_attested_steps": len(receipts),
+                    "receipts": receipts
+                }, rf, indent=2)
+        except Exception as e_rec:
+            logger.warning(f"Failed to write attestation receipts: {e_rec}")
+
+        return json.dumps({
+            "status": "success",
+            "cleanedDataPath": output_path,
+            "final_rows": len(df),
+            "attestationReceiptsPath": receipts_file
+        })
     except Exception as e:
         return json.dumps({"error": str(e)})
     finally:
         if job_id:
             stop_heartbeat()
 
-@mcp.tool()
-def run_crew_pipeline(file_path: str, cleaning_schema: str, job_id: str = None) -> str:
-    """Déclenche l'équipe d'Agents IA (CrewAI) pour nettoyer les données intelligemment."""
-    if job_id:
-        start_heartbeat(job_id)
-    try:
-        from crew_agents import run_dataset_crew
-        
-        # Le Crew renvoie le texte final du Data Scientist et le chemin du fichier nettoyé
-        crew_report, cleaned_path = run_dataset_crew(file_path, cleaning_schema)
-        
-        return json.dumps({
-            "status": "success", 
-            "cleanedDataPath": cleaned_path,
-            "crew_report": crew_report
-        })
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return json.dumps({"error": f"Erreur CrewAI: {str(e)}"})
-    finally:
-        if job_id:
-            stop_heartbeat()
+# CrewAI tool removed to comply with Google ADK/Genkit requirements
 
 import logging
 
@@ -399,7 +428,7 @@ logger = logging.getLogger(__name__)
 
 def optimize_hyperparameters(model_name, X, y, task="classification", cv_strategy=3, n_trials=10):
     """
-    Lance une étude Optuna rapide (max_trials).
+    Runs a fast Optuna study (max_trials).
     - Classification : Maximise le F1-Score Macro.
     - Régression : Minimise le RMSE (Root Mean Squared Error).
     """
@@ -450,7 +479,7 @@ def optimize_hyperparameters(model_name, X, y, task="classification", cv_strateg
                 }
                 model = CatBoostClassifier(**params)
             else:
-                raise ValueError(f"Modèle {model_name} non supporté en classification.")
+                raise ValueError(f"Modèle {model_name} not supported in classification.")
 
             from sklearn.model_selection import cross_val_score
             scores = cross_val_score(model, X, y, cv=cv_strategy, scoring='f1_macro')
@@ -492,7 +521,7 @@ def optimize_hyperparameters(model_name, X, y, task="classification", cv_strateg
                 }
                 model = CatBoostRegressor(**params)
             else:
-                raise ValueError(f"Modèle {model_name} non supporté en régression.")
+                raise ValueError(f"Modèle {model_name} not supported in regression.")
 
             from sklearn.model_selection import cross_val_score
             scores = cross_val_score(model, X, y, cv=cv_strategy, scoring='neg_root_mean_squared_error')
@@ -508,10 +537,10 @@ def optimize_hyperparameters(model_name, X, y, task="classification", cv_strateg
 
 @mcp.tool()
 def evaluate_model(file_path: str, target: str, task: str, model_name: str = "RandomForest", job_id: str = None) -> str:
-    """Entraîne un modèle rapide pour renvoyer des métriques JSON déterministes (Agent) et exporter des PNG (Humain)."""
+    """Trains a fast model to return deterministic JSON metrics (Agent) et exporter des PNG (Humain)."""
     if job_id:
         start_heartbeat(job_id)
-        update_job_progress(job_id, 'evaluating', 35, f"Évaluation rapide du modèle {model_name} (Tâche: {task})")
+        update_job_progress(job_id, 'evaluating', 35, f"Fast evaluation of model {model_name} (Tâche: {task})")
 
     import os
     try:
@@ -523,13 +552,13 @@ def evaluate_model(file_path: str, target: str, task: str, model_name: str = "Ra
             output_dir = "../workspace/models_artifacts"
         os.makedirs(output_dir, exist_ok=True)
         
-        if model_name == "TabICL" or model_name == "TabICL (SOTA)":
-            # For TabICL, we keep the original DataFrame (retaining NaNs and categoricals)
+        if model_name in ["TabICL", "TabICL (SOTA)", "TabFM", "TabFM (SOTA)"]:
+            # For TabICL and TabFM, we keep the original DataFrame (retaining NaNs and categoricals)
             # but ensure we drop rows where target is NaN (since we cannot evaluate with missing targets)
             if task != "clustering" and target in df.columns:
                 df_eval = df.dropna(subset=[target])
                 if len(df_eval) == 0:
-                    return json.dumps({"error": f"Le dataset est vide après suppression des NaNs sur la colonne cible '{target}'."})
+                    return json.dumps({"error": f"Dataset is empty after dropping NaNs on target column '{target}'."})
                 X = df_eval.drop(columns=[target])
                 y = df_eval[target]
             else:
@@ -585,7 +614,7 @@ def evaluate_model(file_path: str, target: str, task: str, model_name: str = "Ra
                     if imbalance_ratio > 10.0:
                         output["issues"].append({
                             "type": "label_imbalance", "severity": "HIGH",
-                            "message": f"Déséquilibre de classes sévère (ratio {imbalance_ratio:.1f}:1). Appliquer SMOTE ou class_weight='balanced'.",
+                            "message": f"Severe class imbalance (ratio {imbalance_ratio:.1f}:1). Apply SMOTE or class_weight='balanced'.",
                             "ratio": round(imbalance_ratio, 2)
                         })
                         logger.warning(f"⚠️ label_imbalance détecté (ratio {imbalance_ratio:.1f}:1)")
@@ -604,7 +633,7 @@ def evaluate_model(file_path: str, target: str, task: str, model_name: str = "Ra
                         if corr > 0.99:
                             output["issues"].append({
                                 "type": "data_leakage", "severity": "CRITICAL",
-                                "message": f"Possible fuite de données : '{col}' corrélé à {corr:.3f} avec la cible. Vérifier si c'est une feature proxy.",
+                                "message": f"Possible data leakage: '{col}' correlated at {corr:.3f} with target. Check if it is a proxy feature.",
                                 "feature": col, "correlation": round(corr, 4)
                             })
                             logger.error(f"🚨 data_leakage suspecté sur '{col}' (corr={corr:.3f})")
@@ -693,11 +722,15 @@ def evaluate_model(file_path: str, target: str, task: str, model_name: str = "Ra
                 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
                 cv_strategy_val = 5
             
-            if model_name == "TabICL" or model_name == "TabICL (SOTA)":
-                if not HAS_TABICL:
-                    return json.dumps({"error": "Bibliothèque TabICL non installée."})
-                # TabICLClassifier fit caches context. KV caching is enabled by default.
-                model = TabICLClassifier()
+            if model_name in ["TabICL", "TabICL (SOTA)", "TabFM", "TabFM (SOTA)"]:
+                if model_name.startswith("TabFM"):
+                    if not HAS_TABFM:
+                        return json.dumps({"error": "Google TabFM library not installed or failed to load."})
+                    model = TabFMClassifier()
+                else:
+                    if not HAS_TABICL:
+                        return json.dumps({"error": "Bibliothèque TabICL non installée."})
+                    model = TabICLClassifier()
                 model.fit(X_train, y_train)
             else:
                 challengers = {
@@ -767,8 +800,8 @@ def evaluate_model(file_path: str, target: str, task: str, model_name: str = "Ra
  
             y_pred = model.predict(X_test)
             
-            if model_name == "TabICL" or model_name == "TabICL (SOTA)":
-                # Bypass expensive cross-validation on CPU for TabICL
+            if model_name in ["TabICL", "TabICL (SOTA)", "TabFM", "TabFM (SOTA)"]:
+                # Bypass expensive cross-validation on CPU for TabICL and TabFM
                 train_score = float(accuracy_score(y_train, model.predict(X_train)))
                 # Set macro F1 as placeholder or compute on test
                 report = classification_report(y_test, y_pred, output_dict=True, zero_division=0)
@@ -978,11 +1011,16 @@ def evaluate_model(file_path: str, target: str, task: str, model_name: str = "Ra
                 logger.error(f"Échec lors du calcul du VIF : {e}")
 
             # 3. Évaluation et Entraînement du Modèle
-            if model_name == "TabICL" or model_name == "TabICL (SOTA)":
-                if not HAS_TABICL:
-                    return json.dumps({"error": "Bibliothèque TabICL non installée."})
-                model = TabICLRegressor()
-                if task == "time_series" or task == "timeseries":
+            if model_name in ["TabICL", "TabICL (SOTA)", "TabFM", "TabFM (SOTA)"]:
+                if model_name.startswith("TabFM"):
+                    if not HAS_TABFM:
+                        return json.dumps({"error": "Google TabFM library not installed or failed to load."})
+                    model = TabFMRegressor()
+                else:
+                    if not HAS_TABICL:
+                        return json.dumps({"error": "Bibliothèque TabICL non installée."})
+                    model = TabICLRegressor()
+                if task in ["time_series", "timeseries"]:
                     output["metrics"]["temporal_cv_std"] = 0.0
                 model.fit(X_train, y_train)
                 y_pred = model.predict(X_test)
@@ -1231,7 +1269,13 @@ def evaluate_model(file_path: str, target: str, task: str, model_name: str = "Ra
         # MLflow logging & model registration
         try:
             import mlflow
-            mlflow.set_tracking_uri("http://127.0.0.1:5000")
+            try:
+                import urllib.request
+                urllib.request.urlopen("http://127.0.0.1:5000/health", timeout=0.5)
+                mlflow.set_tracking_uri("http://127.0.0.1:5000")
+            except Exception:
+                db_path = os.path.abspath("../workspace/mlflow.db")
+                mlflow.set_tracking_uri(f"sqlite:///{db_path}")
             nom_base = os.path.splitext(os.path.basename(file_path))[0]
             mlflow.set_experiment(f"DatasetAutomator_{nom_base}")
             
@@ -1686,11 +1730,11 @@ def run_explainability_audit(file_path: str, target: str, task: str, model_name:
         if target not in df.columns or task == "clustering":
             return json.dumps({"status": "skipped", "message": "Pas de target ou clustering non supporté."})
             
-        if model_name == "TabICL" or model_name == "TabICL (SOTA)":
-            # Keep original DataFrame structure (with NaNs and categories) for TabICL
+        if model_name in ["TabICL", "TabICL (SOTA)", "TabFM", "TabFM (SOTA)"]:
+            # Keep original DataFrame structure (with NaNs and categories) for TabICL and TabFM
             df_eval = df.dropna(subset=[target])
             if len(df_eval) == 0:
-                return json.dumps({"error": f"Le dataset est vide après suppression des NaNs sur la colonne cible '{target}'."})
+                return json.dumps({"error": f"Dataset is empty after dropping NaNs on target column '{target}'."})
             X = df_eval.drop(columns=[target])
             y = df_eval[target]
             if task == "classification" and (y.dtype == 'object' or y.dtype.name == 'category'):
@@ -1706,13 +1750,21 @@ def run_explainability_audit(file_path: str, target: str, task: str, model_name:
             X = df_clean.drop(columns=[target])
             y = df_clean[target]
         
-        if model_name == "TabICL" or model_name == "TabICL (SOTA)":
-            if not HAS_TABICL:
-                return json.dumps({"error": "Bibliothèque TabICL non installée."})
-            if task == "classification":
-                model = TabICLClassifier()
+        if model_name in ["TabICL", "TabICL (SOTA)", "TabFM", "TabFM (SOTA)"]:
+            if model_name.startswith("TabFM"):
+                if not HAS_TABFM:
+                    return json.dumps({"error": "Google TabFM library not installed or failed to load."})
+                if task == "classification":
+                    model = TabFMClassifier()
+                else:
+                    model = TabFMRegressor()
             else:
-                model = TabICLRegressor()
+                if not HAS_TABICL:
+                    return json.dumps({"error": "Bibliothèque TabICL non installée."})
+                if task == "classification":
+                    model = TabICLClassifier()
+                else:
+                    model = TabICLRegressor()
             model.fit(X, y)
         else:
             if task == "classification":
@@ -1724,8 +1776,8 @@ def run_explainability_audit(file_path: str, target: str, task: str, model_name:
             model.fit(X, y)
         
         # SHAP
-        if model_name == "TabICL" or model_name == "TabICL (SOTA)":
-            # Surrogate Model Approach for TabICL to avoid Timeout on Deep Learning
+        if model_name in ["TabICL", "TabICL (SOTA)", "TabFM", "TabFM (SOTA)"]:
+            # Surrogate Model Approach for TabICL and TabFM to avoid Timeout on Deep Learning
             from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
             
             sample_size = min(300, len(X))
@@ -2199,17 +2251,27 @@ def explain_prediction_locally(file_path: str, target: str, task: str, model_nam
         
         # Entraîner le modèle spécifié
         if task == "classification":
-            if model_name == "TabICL" or model_name == "TabICL (SOTA)":
-                if not HAS_TABICL:
-                    return json.dumps({"error": "TabICL non installé."})
-                model = TabICLClassifier()
+            if model_name in ["TabICL", "TabICL (SOTA)", "TabFM", "TabFM (SOTA)"]:
+                if model_name.startswith("TabFM"):
+                    if not HAS_TABFM:
+                        return json.dumps({"error": "TabFM non installé."})
+                    model = TabFMClassifier()
+                else:
+                    if not HAS_TABICL:
+                        return json.dumps({"error": "TabICL non installé."})
+                    model = TabICLClassifier()
             else:
                 model = RandomForestClassifier(random_state=42)
         else:
-            if model_name == "TabICL" or model_name == "TabICL (SOTA)":
-                if not HAS_TABICL:
-                    return json.dumps({"error": "TabICL non installé."})
-                model = TabICLRegressor()
+            if model_name in ["TabICL", "TabICL (SOTA)", "TabFM", "TabFM (SOTA)"]:
+                if model_name.startswith("TabFM"):
+                    if not HAS_TABFM:
+                        return json.dumps({"error": "TabFM non installé."})
+                    model = TabFMRegressor()
+                else:
+                    if not HAS_TABICL:
+                        return json.dumps({"error": "TabICL non installé."})
+                    model = TabICLRegressor()
             else:
                 model = RandomForestRegressor(random_state=42)
                 

@@ -1,3 +1,4 @@
+import '../src/pre-start';
 import { genkit, z } from 'genkit';
 import axios from 'axios';
 import neo4j from 'neo4j-driver';
@@ -24,7 +25,7 @@ const localGemmaModel = ai.defineModel(
     name: 'lmstudio/gemma-4-12b',
   },
   async (request) => {
-    logger.info("🤖 Modèle Gemma appelé par Genkit pour l'extraction (fallback)");
+    logger.info("🤖 Modèle IA appelé par Genkit pour l'extraction");
     
     let promptText = "";
     if (request.messages) {
@@ -38,22 +39,63 @@ const localGemmaModel = ai.defineModel(
         }
       }
     }
-    promptText = promptText.trim();
-    logger.info(`📡 Envoi de la requête à LM Studio... Taille du prompt : ${promptText.length} caractères.`);
+    promptText = promptText.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
-    try {
-      const activeModel = await getActiveModelName();
-      const response = await axios.post('http://127.0.0.1:1234/v1/chat/completions', {
-        model: activeModel,
-        messages: [{ role: 'user', content: promptText }],
-        temperature: request.config?.temperature || 0.2,
-        thinking: false,
-        reasoning: false
-      }, {
-        timeout: 1800000, // 30 minutes
-        headers: { 'Content-Type': 'application/json' }
-      });
+    const provider = process.env.LLM_PROVIDER || 'local';
+    const apiKey = process.env.OPENROUTER_API_KEY || '';
+    const primaryModel = process.env.PRIMARY_MODEL || 'google/gemini-3.5-flash';
+    const fallbackModel = process.env.FALLBACK_MODEL || 'google/gemma-4-26b-a4b-it';
 
+    if (provider === 'openrouter') {
+      logger.info(`📡 [OpenRouter] Sending request to OpenRouter for extraction...`);
+      let modelToUse = primaryModel;
+      let response;
+      
+      try {
+        logger.info(`📡 [OpenRouter] Attempt 1: calling Gemini 3.5 Flash (${primaryModel})...`);
+        response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
+          model: primaryModel,
+          messages: [{ role: 'user', content: promptText }],
+          temperature: request.config?.temperature || 0.2,
+          max_tokens: request.config?.maxOutputTokens || 1024
+        }, {
+          timeout: 180000,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+            'HTTP-Referer': 'http://localhost:3000',
+            'X-Title': 'Dataset Automator'
+          }
+        });
+      } catch (err: any) {
+        const errMsg = err.response ? `HTTP ${err.response.status} - ${JSON.stringify(err.response.data)}` : (err.message || err);
+        logger.warn(`⚠️ [OpenRouter] Primary model Gemini failed: ${errMsg}`);
+        logger.warn(`🔄 [OpenRouter] Attempt 2: falling back to Gemma 4 (${fallbackModel})...`);
+        
+        try {
+          response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
+            model: fallbackModel,
+            messages: [{ role: 'user', content: promptText }],
+            temperature: request.config?.temperature || 0.2,
+            max_tokens: request.config?.maxOutputTokens || 1024
+          }, {
+            timeout: 180000,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`,
+              'HTTP-Referer': 'http://localhost:3000',
+              'X-Title': 'Dataset Automator'
+            }
+          });
+          modelToUse = fallbackModel;
+        } catch (fallbackErr: any) {
+          const fallbackErrMsg = fallbackErr.response ? `HTTP ${fallbackErr.response.status} - ${JSON.stringify(fallbackErr.response.data)}` : (fallbackErr.message || fallbackErr);
+          logger.error(`❌ [OpenRouter] Fallback model Gemma 4 also failed: ${fallbackErrMsg}`);
+          throw fallbackErr;
+        }
+      }
+
+      logger.info(`✅ [OpenRouter] Response received using model: ${modelToUse}`);
       const replyContent = response.data.choices[0].message.content || "";
       return {
         message: {
@@ -61,9 +103,31 @@ const localGemmaModel = ai.defineModel(
           content: [{ text: replyContent }]
         }
       };
-    } catch (err: any) {
-      logger.error("❌ Erreur lors de l'appel à LM Studio :", err.message || err);
-      throw err;
+    } else {
+      const activeModel = await getActiveModelName();
+      logger.info(`📡 Envoi de la requête à LM Studio... Taille du prompt : ${promptText.length} caractères.`);
+
+      try {
+        const response = await axios.post('http://127.0.0.1:1234/v1/chat/completions', {
+          model: activeModel,
+          messages: [{ role: 'user', content: promptText }],
+          temperature: request.config?.temperature || 0.2
+        }, {
+          timeout: 1800000,
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const replyContent = response.data.choices[0].message.content || "";
+        return {
+          message: {
+            role: 'model',
+            content: [{ text: replyContent }]
+          }
+        };
+      } catch (err: any) {
+        logger.error("❌ Erreur lors de l'appel à LM Studio :", err.message || err);
+        throw err;
+      }
     }
   }
 );

@@ -1,9 +1,15 @@
 ---
+type: concept
 title: Architecture Agentique à 3 Couches
 domain: agentic_ai
-type: concept
+generated: { by: "reference_agent/gemini-3.5-flash", at: "2026-08-14T14:00:00Z" }
+verified:
+  - { by: "human: Nelly Gervais (@gervais-afk)", at: "2026-08-14T15:00:00Z" }
+status: stable
+stale_after: 2027-08-14
+sources:
+  - { id: src-1, title: "Leadership in Agentic AI - Module 2 : Architecting the Agentic Enterprise", author: external }
 ---
-
 # Architecture Agentique à 3 Couches
 
 **Definition**: Modèle d'architecture d'entreprise divisant les systèmes en Couche d'Orchestration (plan de contrôle), Couche Cognitive (raisonnement) et Couche des Outils (action).
@@ -26,6 +32,3 @@ Face à la complexité des flux de travail en entreprise, un agent monolithique 
 ## Liens
 - Implémenté via: LangGraph, MCP
 - Concepts liés: Société d'Agents
-
-**Sources**:
-- Leadership in Agentic AI - Module 2 : Architecting the Agentic Enterprise

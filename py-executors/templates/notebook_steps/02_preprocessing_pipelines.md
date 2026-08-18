@@ -186,7 +186,7 @@ if TYPE_TACHE == "classification":
     counts = pd.Series(y_train).value_counts(normalize=True)
     if counts.min() < 0.2:
         print(f"⚖️ Déséquilibre détecté ({counts.min():.1%}). Application de SMOTE sur le Train Set.")
-        # Rappel : SMOTE n'est appliqué ICI que pour le fit final du train.
+        # Recall : SMOTE n'est appliqué ICI que pour le fit final du train.
         # En cas de validation croisée (ex: Optuna), SMOTE doit être intégré dans un Pipeline imblearn.
         smote = SMOTE(random_state=42)
         X_train_prep, y_train = smote.fit_resample(X_train_prep, y_train)

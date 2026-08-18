@@ -39,7 +39,7 @@ checklist = {
 report_md = f"""
 ### 🏆 Synthèse MLOps pour le dataset `{NOM_BASE}`
 
-- **Modèle Champion retenu** : `{best_name if 'best_name' in globals() else 'RandomForest'}`
+- **Champion Model retenu** : `{best_name if 'best_name' in globals() else 'RandomForest'}`
 - **Dossier d'artefacts** : `{OUTPUT_DIR}`
 
 | Critère de Gouvernance | Statut |

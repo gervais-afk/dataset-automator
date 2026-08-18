@@ -1,0 +1,27 @@
+# Git
+.git
+.gitignore
+.github
+
+# Virtual Environments
+.venv
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Node / JS
+node_modules/
+dist/
+
+# Logs & Emulators
+*.log
+firestore-debug.log
+.firebase/
+
+# Test caches
+.pytest_cache/
+.coverage
+htmlcov/

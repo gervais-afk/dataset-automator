@@ -185,7 +185,7 @@ except Exception as e:
 log_section("12 - PSEUDO-LABELING DU JEU D'ENTRAÎNEMENT")
 
 # Pour éviter la fuite de données, on n'utilise jamais le jeu d'évaluation !
-# Nous appliquons un bruit contrôlé uniquement sur une copie bruitée de la base de Train.
+# We apply un bruit contrôlé uniquement sur une copie bruitée de la base de Train.
 try:
     if TYPE_TACHE != "unsupervised" and 'stacking_model' in globals():
         conf_model = stacking_model

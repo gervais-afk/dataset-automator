@@ -63,8 +63,8 @@ warmup_size = 30
 combined_test_raw = pd.concat([train_df_cleaned.tail(warmup_size), test_df_cleaned])
 test_fe = generate_features(combined_test_raw, is_train=False).iloc[warmup_size:].dropna()
 
-# ── 3. Analyse de Stationnarité (ADF) sur la cible d'entraînement ──
-print("\n📊 2. Analyse de Stationnarité (ADF)")
+# ── 3. Analyse de Stationarity (ADF) sur la cible d'entraînement ──
+print("\n📊 2. Analyse de Stationarity (ADF)")
 try:
     from statsmodels.tsa.stattools import adfuller
     from statsmodels.graphics.tsaplots import plot_acf, plot_pacf

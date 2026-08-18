@@ -1,9 +1,15 @@
 ---
+type: concept
 title: Agentic TCO
 domain: mlops
-type: concept
+generated: { by: "reference_agent/gemini-3.5-flash", at: "2026-08-14T14:00:00Z" }
+verified:
+  - { by: "human: Nelly Gervais (@gervais-afk)", at: "2026-08-14T15:00:00Z" }
+status: stable
+stale_after: 2027-08-14
+sources:
+  - { id: src-1, title: "Leadership in Agentic AI - Module 3: The Economics of Autonomy", author: external }
 ---
-
 # Agentic TCO (Total Cost of Ownership)
 
 **Definition**: Évaluation du Coût Total de Possession incluant l'inférence continue, la maintenance de l'orchestration et des pipelines, justifié par la valeur de l'amélioration composée.
@@ -29,6 +35,3 @@ Contrairement à un logiciel SaaS classique dont la valeur est fixe dès son ach
 La valeur de l'Agentic AI réside dans sa capacité à **multiplier les capacités** et à créer un avantage concurrentiel exclusif au fil du temps (Compound Value). 
 
 L'objectif financier est d'atteindre le point de croisement où cette Valeur Composée dépasse le Coût Total de Possession (TCO) accumulé.
-
-**Sources**:
-- Leadership in Agentic AI - Module 3: The Economics of Autonomy

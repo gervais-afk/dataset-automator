@@ -27,12 +27,12 @@ function createDriver(): Driver {
 }
 
 // =============================================================================
-// Entity Resolution — résolution des alias vers un MID stable
+// Entity Resolution — resolves aliases to a stable MID
 // =============================================================================
 
 /**
- * Résout un nom d'entité (qui peut être un alias) vers son MID stable en base.
- * Effectue une recherche sur le nom principal ET sur le tableau d'aliases.
+ * Resolves an entity name (which may be an alias) to its stable MID in the database.
+ * Searches on the primary name AND on the aliases array.
  */
 async function resolveEntityMid(
   driver: Driver,
@@ -54,7 +54,7 @@ async function resolveEntityMid(
 }
 
 // =============================================================================
-// ABAC — Récupération des actions autorisées pour un rôle donné
+// ABAC — Retrieve allowed actions for a given role
 // =============================================================================
 
 async function getAllowedActions(
@@ -82,7 +82,7 @@ async function getAllowedActions(
       } as ActionType;
     });
   } catch (err: any) {
-    logger.warn(`⚠️ [ABAC] Impossible de charger les actions autorisées : ${err.message}`);
+    logger.warn(`⚠️ [ABAC] Failed to load allowed actions: ${err.message}`);
     return [];
   } finally {
     await session.close();
@@ -90,12 +90,12 @@ async function getAllowedActions(
 }
 
 // =============================================================================
-// Multi-hop GraphRAG — Traversée déterministe du graphe (BFS limité)
+// Multi-hop GraphRAG — Deterministic graph traversal (limited BFS)
 // =============================================================================
 
 /**
- * Effectue une traversée multi-sauts depuis un MID d'entité avec filtrage ABAC.
- * Retourne un chemin de GraphHop, les entités trouvées et les triplets sémantiques.
+ * Performs a multi-hop traversal from an entity MID with ABAC filtering.
+ * Returns a GraphHop path, discovered entities, and semantic triples.
  */
 async function multiHopTraversal(
   driver: Driver,
@@ -105,8 +105,8 @@ async function multiHopTraversal(
 ): Promise<{ hops: GraphHop[]; entities: OntologyEntity[]; triples: SemanticTriple[] }> {
   const session = driver.session();
   try {
-    // Traversée multi-sauts ABAC-filtrée :
-    // - Seules les entités dont `roles` contient le rôle de l'utilisateur (ou `roles` est absent) sont incluses.
+    // ABAC-filtered multi-hop traversal:
+    // - Only entities whose `roles` contains the user's role (or `roles` is absent) are included.
     const result = await session.run(
       `MATCH path = (start:Entity { mid: $startMid })-[*1..${maxDepth}]-(neighbor:Entity)
        WHERE neighbor.roles IS NULL OR $userRole IN neighbor.roles
@@ -165,7 +165,7 @@ async function multiHopTraversal(
 }
 
 // =============================================================================
-// Export de l'outil Genkit
+// Genkit Tool Export
 // =============================================================================
 
 export const getGraphRAGReasoner = (ai: any) =>
@@ -173,18 +173,18 @@ export const getGraphRAGReasoner = (ai: any) =>
     {
       name: 'graphRAGReasoner',
       description:
-        "Effectue une traversée déterministe multi-sauts du graphe de connaissances (GraphRAG/OAG). " +
-        "Retourne un contexte structuré composé d'entités typées, de triplets sémantiques et d'actions autorisées " +
-        "selon le rôle ABAC de l'utilisateur. À utiliser à la place du RAG vectoriel classique pour les questions " +
-        "complexes nécessitant un raisonnement multi-sauts (ex: impact fournisseur, dépendances de données).",
+        "Performs a deterministic multi-hop traversal of the knowledge graph (GraphRAG/OAG). " +
+        "Returns a structured context composed of typed entities, semantic triples, and allowed actions " +
+        "based on the user's ABAC role. Use instead of classic vector RAG for complex questions " +
+        "requiring multi-hop reasoning (e.g., supplier impact, data dependencies).",
       inputSchema: z.object({
         question: z
           .string()
-          .describe("La question métier posée par l'utilisateur."),
+          .describe("The business question asked by the user."),
         startEntityName: z
           .string()
           .describe(
-            "Nom ou alias de l'entité de départ pour la traversée du graphe (ex: nom d'un fournisseur, d'un produit).",
+            "Name or alias of the starting entity for graph traversal (e.g., supplier name, product name).",
           ),
         maxDepth: z
           .number()
@@ -193,18 +193,18 @@ export const getGraphRAGReasoner = (ai: any) =>
           .max(5)
           .default(3)
           .describe(
-            'Profondeur maximale de la traversée multi-sauts (1–5). Par défaut : 3.',
+            'Maximum multi-hop traversal depth (1–5). Default: 3.',
           ),
         userContext: z
           .object({
             userId: z.string(),
             userRole: z.string().describe(
-              "Code du rôle ABAC de l'utilisateur (ex: ANALYST, MANAGER, ADMIN, AI_AGENT).",
+              "User's ABAC role code (e.g., ANALYST, MANAGER, ADMIN, AI_AGENT).",
             ),
             agentId: z.string().optional(),
             sessionId: z.string(),
           })
-          .describe("Contexte utilisateur pour le filtrage ABAC."),
+          .describe("User context for ABAC filtering."),
       }),
       outputSchema: z.any(),
     },
@@ -219,32 +219,32 @@ export const getGraphRAGReasoner = (ai: any) =>
 
       try {
         logger.info(
-          `🕸️  [GraphRAG] Démarrage traversée multi-sauts depuis "${input.startEntityName}" ` +
-          `(profondeur: ${input.maxDepth}, rôle: ${input.userContext.userRole})`,
+          `🕸️  [GraphRAG] Starting multi-hop traversal from "${input.startEntityName}" ` +
+          `(depth: ${input.maxDepth}, role: ${input.userContext.userRole})`,
         );
 
-        // 1. Résolution de l'entité de départ (Entity Resolution / Alias matching)
+        // 1. Starting entity resolution (Entity Resolution / Alias matching)
         const startMid = await resolveEntityMid(driver, input.startEntityName);
         if (!startMid) {
           logger.warn(
-            `⚠️  [GraphRAG] Entité introuvable : "${input.startEntityName}". ` +
-            `Vérifiez le nom ou les aliases dans le graphe.`,
+            `⚠️  [GraphRAG] Entity not found: "${input.startEntityName}". ` +
+            `Check the name or aliases in the graph.`,
           );
           return {
-            error: `Entité "${input.startEntityName}" introuvable dans le graphe de connaissances. ` +
-                   `Vérifiez le nom ou les aliases de l'entité.`,
+            error: `Entity "${input.startEntityName}" not found in the knowledge graph. ` +
+                   `Check the entity name or its aliases.`,
           };
         }
 
         logger.info(`✅  [GraphRAG] Entité résolue → MID: ${startMid}`);
 
-        // 2. Récupération des actions ABAC autorisées pour ce rôle
+        // 2. Retrieve allowed ABAC actions for this role
         const allowedActions = await getAllowedActions(
           driver,
           input.userContext.userRole,
         );
 
-        // 3. Traversée multi-sauts avec filtrage ABAC
+        // 3. Multi-hop traversal with ABAC filtering
         const { hops, entities, triples } = await multiHopTraversal(
           driver,
           startMid,
@@ -255,11 +255,11 @@ export const getGraphRAGReasoner = (ai: any) =>
         const executionTimeMs = Date.now() - startTime;
 
         logger.info(
-          `✅  [GraphRAG] Traversée terminée : ${hops.length} sauts, ` +
-          `${entities.length} entités, ${triples.length} triplets — ${executionTimeMs}ms`,
+          `✅  [GraphRAG] Traversal complete: ${hops.length} hops, ` +
+          `${entities.length} entities, ${triples.length} triples — ${executionTimeMs}ms`,
         );
 
-        // 4. Construction du contexte OAG pour le LLM
+        // 4. Build OAG context for the LLM
         const oagContext: OAGContext = {
           question: input.question,
           resolvedPath: hops,
@@ -274,7 +274,7 @@ export const getGraphRAGReasoner = (ai: any) =>
           },
         };
 
-        // 5. Construction de la requête Cypher exécutée (pour traçabilité)
+        // 5. Build the executed Cypher query (for traceability)
         const rawCypherQuery =
           `MATCH path = (start:Entity { mid: "${startMid}" })-[*1..${input.maxDepth}]-(neighbor:Entity) ` +
           `WHERE neighbor.roles IS NULL OR "${input.userContext.userRole}" IN neighbor.roles ` +
@@ -282,7 +282,7 @@ export const getGraphRAGReasoner = (ai: any) =>
 
         return { oagContext, rawCypherQuery };
       } catch (error: any) {
-        logger.error({ error }, `❌  [GraphRAG] Erreur lors de la traversée : ${error.message}`);
+        logger.error({ error }, `❌  [GraphRAG] Traversal error: ${error.message}`);
         return { error: error.message };
       } finally {
         await driver.close();

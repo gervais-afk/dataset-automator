@@ -9,7 +9,7 @@ export class RagRetriever {
     const domainDir = path.join(__dirname, '..', '..', '..', 'knowledge_base', domain);
     
     if (!fs.existsSync(domainDir)) {
-      logger.warn(`[RAG WARN] Aucun dossier de connaissances trouvé pour le domaine : ${domain}`);
+      logger.warn(`[RAG WARN] No knowledge directory found for domain: ${domain}`);
       return '';
     }
 
@@ -23,10 +23,10 @@ export class RagRetriever {
         combinedKnowledge += `\n--- Document: ${file} ---\n${content}\n`;
       }
       
-      logger.info(`[RAG INFO] ${files.length} documents chargés pour le domaine ${domain}`);
+      logger.info(`[RAG INFO] ${files.length} documents loaded for domain ${domain}`);
       return combinedKnowledge;
     } catch (error) {
-      logger.error({ err: error }, `[RAG ERROR] Erreur lors de la lecture du domaine ${domain}`);
+      logger.error({ err: error }, `[RAG ERROR] Error reading domain ${domain}`);
       return '';
     }
   }

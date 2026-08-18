@@ -109,30 +109,30 @@ export interface ActionLogEntry {
 }
 
 // =============================================================================
-// SECTION 3 : ABAC — Contrôle d'Accès Basé sur les Attributs
+// SECTION 3 : ABAC — Attribute-Based Access Control
 // =============================================================================
 
-/** Définition d'un rôle ABAC (nœud :Role dans Neo4j). */
+/** Definition of an ABAC role (:Role node in Neo4j). */
 export interface OntologyRole {
   code: string;
   label: string;
-  allowedActions: string[]; // Codes des :ActionType autorisées
+  allowedActions: string[]; // Codes of authorized :ActionType
 }
 
-/** Contexte utilisateur injecté dans chaque requête pour filtrage ABAC. */
+/** User context injected into each request for ABAC filtering. */
 export interface UserContext {
   userId: string;
-  userRole: string;  // Code du rôle ABAC (ex: "MANAGER")
-  agentId?: string;  // Si utilisateur = agent IA
+  userRole: string;  // ABAC role code (e.g., "MANAGER")
+  agentId?: string;  // If user = AI agent
   sessionId: string;
 }
 
 // =============================================================================
 // SECTION 4 : OAG — Ontology-Augmented Generation Context
-// Format structuré fourni au LLM (remplace les blocs de texte bruts du RAG classique).
+// Structured format provided to the LLM (replaces raw text blocks from classic RAG).
 // =============================================================================
 
-/** Un "hop" (saut) dans une traversée multi-sauts du graphe. */
+/** A "hop" in a multi-hop graph traversal. */
 export interface GraphHop {
   fromEntity: string;
   relationLabel: string;
@@ -140,14 +140,14 @@ export interface GraphHop {
   properties?: Record<string, unknown>;
 }
 
-/** Contexte OAG complet fourni au LLM pour une requête donnée. */
+/** Full OAG context provided to the LLM for a given request. */
 export interface OAGContext {
   question: string;
-  resolvedPath: GraphHop[];            // Chemin déterministe traversé dans le graphe
-  entities: OntologyEntity[];          // Entités pertinentes extraites du graphe
-  triples: SemanticTriple[];           // Triplets sémantiques du contexte
+  resolvedPath: GraphHop[];            // Deterministic path traversed in the graph
+  entities: OntologyEntity[];          // Relevant entities extracted from the graph
+  triples: SemanticTriple[];           // Semantic triples from the context
   userContext: UserContext;
-  allowedActions: ActionType[];        // Actions que cet utilisateur peut déclencher
+  allowedActions: ActionType[];        // Actions this user can trigger
   metadata: {
     queryDepth: number;
     entitiesFound: number;
@@ -155,9 +155,9 @@ export interface OAGContext {
   };
 }
 
-/** Résultat retourné par le GraphRAG Reasoner. */
+/** Result returned by the GraphRAG Reasoner. */
 export interface GraphRAGResult {
   oagContext: OAGContext;
-  rawCypherQuery: string;                         // Requête Cypher exécutée (traçabilité)
-  suggestedProposal?: Partial<ActionProposal>;    // Proposition d'action suggérée (si applicable)
+  rawCypherQuery: string;                         // Executed Cypher query (traceability)
+  suggestedProposal?: Partial<ActionProposal>;    // Suggested action proposal (if applicable)
 }

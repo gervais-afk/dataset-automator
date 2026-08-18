@@ -77,10 +77,10 @@ if TYPE_TACHE == "classification":
         n_plots = 3 if is_binary else 2
         fig, axes = plt.subplots(1, n_plots, figsize=(6 * n_plots, 5))
         
-        # 1. Matrice de Confusion
+        # 1. Confusion Matrix
         cm = confusion_matrix(y_test, y_pred)
         sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=axes[0], cbar=False)
-        axes[0].set_title("🔲 Matrice de Confusion")
+        axes[0].set_title("🔲 Confusion Matrix")
         axes[0].set_ylabel("Classe Réelle")
         axes[0].set_xlabel("Classe Prédite")
         
@@ -144,7 +144,7 @@ elif TYPE_TACHE == "unsupervised":
 
 # ── 4.3 Métriques Standards ──────────────────────────────────────────
 if TYPE_TACHE == "classification":
-    print("\n📋 Rapport de Classification :")
+    print("\n📋 Classification Report :")
     print(classification_report(y_test, y_pred))
     if best_name not in results:
         results[best_name] = {}
@@ -164,18 +164,18 @@ elif TYPE_TACHE == "regression":
     results[best_name]['score'] = r2_val
     results[best_name]['model'] = best_model
     
-    # ── Analyse des Résidus ──────────────────────────────────────────
-    print("\n🔬 Analyse Diagnostique des Résidus...")
+    # ── Analyse des Residuals ──────────────────────────────────────────
+    print("\n🔬 Analyse Diagnostique des Residuals...")
     residuals = y_test - y_pred
     
     fig, ax = plt.subplots(1, 2, figsize=(14, 5))
     
-    # 1. Residuals Plot (Valeurs prédites vs Résidus) - Homoscédasticité
+    # 1. Residuals Plot (Valeurs prédites vs Residuals) - Homoscédasticité
     ax[0].scatter(y_pred, residuals, alpha=0.5, edgecolors='k', color='teal')
     ax[0].axhline(y=0, color='r', linestyle='--')
     ax[0].set_xlabel('Valeurs Prédites')
-    ax[0].set_ylabel('Résidus')
-    ax[0].set_title('Graphique des Résidus (Homoscédasticité)')
+    ax[0].set_ylabel('Residuals')
+    ax[0].set_title('Graphique des Residuals (Homoscédasticité)')
     ax[0].grid(True, alpha=0.3)
     
     # 2. Q-Q Plot (Normalité des résidus standardisés)
@@ -190,7 +190,7 @@ elif TYPE_TACHE == "regression":
     plt.show()
 ```
 
-### 📊 Interprétation du Graphique des Résidus
+### 📊 Interprétation du Graphique des Residuals
 Ce graphique permet de vérifier l'hypothèse d'homoscédasticité et l'absence de modèles non linéaires résiduels.
 *   **Le scénario idéal :** Les résidus doivent s'éparpiller de manière parfaitement symétrique, aléatoire et homogène autour de la ligne horizontale $e_i = 0$. Cela signifie que l'erreur de notre modèle est purement aléatoire et de variance constante.
 *   **Présence d'Hétéroscédasticité :** Si la dispersion des points s'accroît à mesure que les valeurs prédites augmentent (formant un cône ou un entonnoir), l'incertitude de prédiction est plus forte pour les valeurs élevées. *Recommandation : appliquer une transformation logarithmique sur la cible ou segmenter le modèle.*
@@ -209,13 +209,27 @@ try:
     # On utilise un échantillon pour la rapidité
     X_sample = X_test_prep[:100]  # Réduire à 100 pour être sûr de la performance
     
-    # Détecter si c'est TabICL
-    is_tabicl = "TabICL" in type(best_model).__name__
+    # Détecter si c'est TabFM ou TabICL (Foundation Models)
+    is_foundation = "TabFM" in type(best_model).__name__ or "TabICL" in type(best_model).__name__
     
-    if is_tabicl:
-        from tabicl.shap import get_shap_values
-        print("💡 Analyse SHAP effectuée via l'intégration native tabicl.shap.")
-        shap_values = get_shap_values(best_model, X_sample)
+    if is_foundation:
+        try:
+            from tabfm.shap import get_shap_values
+            shap_values = get_shap_values(best_model, X_sample)
+            print("💡 Analyse SHAP effectuée via l'intégration native Google TabFM.")
+        except Exception:
+            try:
+                from tabicl.shap import get_shap_values
+                shap_values = get_shap_values(best_model, X_sample)
+                print("💡 Analyse SHAP effectuée via l'intégration native TabICL.")
+            except Exception:
+                # Surrogate tree explainer for foundation models
+                from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+                surrogate = RandomForestClassifier(n_estimators=50, random_state=42) if TYPE_TACHE == "classification" else RandomForestRegressor(n_estimators=50, random_state=42)
+                surrogate.fit(X_train_prep[:200], best_model.predict(X_train_prep[:200]))
+                explainer = shap.TreeExplainer(surrogate)
+                shap_values = explainer(X_sample)
+                print("💡 Analyse SHAP effectuée via modèle de substitution (Surrogate Model).")
     else:
         # Détecter si c'est un StackingClassifier/Regressor ou autre modèle complexe
         model_to_explain = best_model

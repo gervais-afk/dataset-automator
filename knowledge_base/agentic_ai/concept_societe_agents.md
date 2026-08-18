@@ -1,9 +1,15 @@
 ---
+type: concept
 title: Société d'Agents
 domain: agentic_ai
-type: concept
+generated: { by: "reference_agent/gemini-3.5-flash", at: "2026-08-14T14:00:00Z" }
+verified:
+  - { by: "human: Nelly Gervais (@gervais-afk)", at: "2026-08-14T15:00:00Z" }
+status: stable
+stale_after: 2027-08-14
+sources:
+  - { id: src-1, title: "Leadership in Agentic AI - Module 2 : Architecting the Agentic Enterprise", author: external }
 ---
-
 # Société d'Agents
 
 **Definition**: Paradigme où des flux de travail complexes sont gérés par un réseau d'agents hautement spécialisés coordonnés par un orchestrateur, évitant la surcharge de contexte des agents généralistes.
@@ -28,6 +34,3 @@ Au lieu de fournir un prompt massif de 10 000 tokens à un seul agent pour lui d
 **Outils d'implémentation** :
 - **CrewAI** excelle pour définir statiquement ces rôles et leurs processus.
 - **LangGraph** excelle pour définir dynamiquement la manière dont cette société communique et s'échange l'état du système.
-
-**Sources**:
-- Leadership in Agentic AI - Module 2 : Architecting the Agentic Enterprise

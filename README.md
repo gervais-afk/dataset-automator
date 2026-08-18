@@ -131,3 +131,21 @@ python -m pytest tests/ --override-ini="testpaths=src/tests" -v
 ### 🛡️ Legal & Copyright Disclaimer
 > **Copyright (c) 2026 KOA MARIE GERVAIS NELLY (@gervais-afk). All Rights Reserved.**  
 > This platform, its statistical drift monitoring workflows, automated multi-modal parsing logic, and topological GraphRAG indexing architectures constitute the **exclusive intellectual property** of the author. Commercial exploitation or unauthorized reproduction without express written consent is strictly prohibited.
+
+---
+
+## 🏆 Hackathon & Deliverables
+
+> **Google Cloud #AllThingsAgenticHackathon — Enterprise Track (The Fortified Enterprise Fleet)**  
+> **Created by:** [Gervais Marie (magenel85)](https://devpost.com/magenel85) — *Google Developer Program & Certified Gemini Enterprise Agent Ready (GEAR)*  
+> **Powered by:** Google Gemini 3.5 Flash, Google TabFM, Google PAIR What-If Tool & EU AI Act Cryptographic Attestation Engine
+
+* **Public Article (Dev.to)**: [How I Built a Multi-Agent MLOps Control Center with Google TabFM, Gemma 2B & EU AI Act](https://dev.to/gervais_marie/how-i-built-a-multi-agent-mlops-control-center-with-google-tabfm-gemma-2b-eu-ai-act-38c7)
+* **Pitch & Demo Video**: *(coming soon)*
+
+---
+
+## 📄 License
+
+Proprietary License — All Rights Reserved.  
+Copyright (c) 2026 **KOA MARIE GERVAIS NELLY (@gervais-afk)**. All rights reserved.

@@ -106,7 +106,7 @@ with torch.no_grad():
         correct += (predicted == labels).sum().item()
 
 test_acc = correct / total
-print(f"\n📊 Précision (Accuracy) sur le Test Set : {test_acc*100:.2f}%")
+print(f"\n📊 Precision (Accuracy) sur le Test Set : {test_acc*100:.2f}%")
 
 # Enregistrement pour l'orchestrateur
 best_name = "Simple CNN PyTorch"
